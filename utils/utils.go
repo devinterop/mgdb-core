@@ -233,11 +233,16 @@ func ConvertOperators(data interface{}) interface{} {
 		d := reflect.ValueOf(data)
 		tmpData := make(map[string]interface{})
 		for _, k := range d.MapKeys() {
-			typeOfValue := reflect.TypeOf(d.MapIndex(k).Interface()).Kind()
-			if typeOfValue == reflect.Map || typeOfValue == reflect.Slice {
-				tmpData[MapOperators(k.String())] = ConvertOperators(d.MapIndex(k).Interface())
+			if d.MapIndex(k).Interface() != nil {
+				typeOfValue := reflect.TypeOf(d.MapIndex(k).Interface()).Kind()
+				if typeOfValue == reflect.Map || typeOfValue == reflect.Slice {
+					tmpData[MapOperators(k.String())] = ConvertOperators(d.MapIndex(k).Interface())
+				} else {
+					tmpData[MapOperators(k.String())] = d.MapIndex(k).Interface()
+				}
 			} else {
-				tmpData[MapOperators(k.String())] = d.MapIndex(k).Interface()
+				fmt.Println("object id:", MapOperators(k.String()))
+				tmpData[MapOperators(k.String())] = nil
 			}
 		}
 		return tmpData
