@@ -29,7 +29,7 @@ var logrusFieldMongodbReadController = structs.LogrusField{
 	Module: "MongodbReadController",
 }
 
-func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService) (bool, interface{}) {
+func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService, mapCon ...map[string]interface{}) (bool, interface{}) {
 	logrusField := logrusFieldMongodbReadController
 	logrusField.Method = "FindDocumentObj"
 
@@ -44,7 +44,7 @@ func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService) (bool,
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
 
-	return auth.FindDocument(c, false)
+	return auth.FindDocument(c, jsonPost, false, mapCon[0])
 }
 
 // / count = true ; only count document non get data
@@ -63,24 +63,24 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
 	//os.Setenv("collection", jsonPost.Collection)
-	return auth.FindDocument(c, count)
+	return auth.FindDocument(c, jsonPost, count)
 }
 
 // FindDocument is for Document insert
-func (auth *ReadController) FindDocument(c *gin.Context, count bool) (bool, interface{}) {
+func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonService, count bool, mapCon ...map[string]interface{}) (bool, interface{}) {
 	logrusField := logrusFieldMongodbReadController
 	logrusField.Method = "FindDocument"
 
 	var resultStatus bool
 	var resultData interface{}
-	var jsonbody structs.JsonBody
+	// var jsonbody structs.JsonBody
 	//Check if jsonbody is not following struck format
-	if err := c.ShouldBindJSON(&jsonbody); err != nil {
-		// panic(err)
-		logging.Logger(cnst.Fatal, err, logrusField)
-		c.JSON(http.StatusBadRequest, err) // 401 -> 400
-		return resultStatus, resultData
-	}
+	// if err := c.ShouldBindJSON(&jsonbody); err != nil {
+	// 	// panic(err)
+	// 	logging.Logger(cnst.Fatal, err, logrusField)
+	// 	c.JSON(http.StatusBadRequest, err) // 401 -> 400
+	// 	return resultStatus, resultData
+	// }
 	//Check if data is empty
 	if jsonbody.Projection == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "'Projection': required field is not set"}) // 401 -> 400
@@ -107,6 +107,13 @@ func (auth *ReadController) FindDocument(c *gin.Context, count bool) (bool, inte
 	// if err {}
 	// arrayFilter := mapString(arr).(map[string]interface{})
 	// fmt.Println(arrayFilter)
+
+	if len(mapCon) > 0 {
+		v := []map[string]interface{}{
+			condition, mapCon[0],
+		}
+		condition = mergeMaps(v...)
+	}
 
 	//find with aggregate
 	if aggregate {
@@ -263,45 +270,55 @@ func projectionSet(p interface{}, timezone string) (bson.M, bson.M, bool) {
 // }
 
 // jsonCondition := `
-// 					{
-// 						"id": "5bf142459b72e12b2b1b2cd1",
-// 						"$or": [
-// 							{
-// 								"sizes": {
-// 									"$elemMatch": {
-// 										"id": "5bf142459b72e12b2b1b2af2",
-// 										"quantity": {
-// 											"$gt": 0
-// 										}
-// 									},
-// 									"$and": [
-// 										{
-// 											"sizes.uk": "7"
-// 										},
-// 										{
-// 											"sizes.quantity": 0
-// 										}
-// 									]
-// 								}
-// 							},
-// 							{
-// 								"colors": {
-// 									"$all": [
-// 										"Black",
-// 										"White"
-// 									]
-// 								}
-// 							},
-// 							{
-// 								"sizes": {
-// 									"$in": [
-// 										"M",
-// 										"L"
-// 									]
-// 								}
-// 							}
-// 						]
-// 					}
-// 				`
-// 	var condition map[string]interface{}
-// 	json.Unmarshal([]byte(jsonCondition), &condition)
+//
+//					{
+//						"id": "5bf142459b72e12b2b1b2cd1",
+//						"$or": [
+//							{
+//								"sizes": {
+//									"$elemMatch": {
+//										"id": "5bf142459b72e12b2b1b2af2",
+//										"quantity": {
+//											"$gt": 0
+//										}
+//									},
+//									"$and": [
+//										{
+//											"sizes.uk": "7"
+//										},
+//										{
+//											"sizes.quantity": 0
+//										}
+//									]
+//								}
+//							},
+//							{
+//								"colors": {
+//									"$all": [
+//										"Black",
+//										"White"
+//									]
+//								}
+//							},
+//							{
+//								"sizes": {
+//									"$in": [
+//										"M",
+//										"L"
+//									]
+//								}
+//							}
+//						]
+//					}
+//				`
+//	var condition map[string]interface{}
+//	json.Unmarshal([]byte(jsonCondition), &condition)
+func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}

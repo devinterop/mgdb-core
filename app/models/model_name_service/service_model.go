@@ -94,7 +94,7 @@ func GetDocumentId(filterName string, filterVal interface{}, Collection string) 
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
 	modelCtrl := new(modelCtrl.ReadController)
-	saveStatus, resultData := modelCtrl.FindDocument(c, false) //// read document
+	saveStatus, resultData := modelCtrl.FindDocument(c, jsonPost, false) //////// read document
 	//log.Println(resultData)
 	logging.Logger(cnst.Debug, fmt.Sprint("result: ", resultData), logrusField)
 
