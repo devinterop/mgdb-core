@@ -638,7 +638,7 @@ func MapOperators(str string) string {
 	return str
 }
 
-func CheckJsonData(jsondata map[string]interface{},mapGenerateID ...[]string) map[string]interface{} {
+func CheckJsonData(jsondata map[string]interface{}, mapGenerateID ...[]string) map[string]interface{} {
 	for key, result := range jsondata {
 		//check jsondata contain utils in array
 		if reflect.TypeOf(result).Kind().String() == "slice" {
@@ -663,8 +663,11 @@ func CheckJsonData(jsondata map[string]interface{},mapGenerateID ...[]string) ma
 
 					for _, result := range subData {
 						if reflect.TypeOf(result).Kind().String() == "slice" {
-
-							CheckJsonData(subData)
+							if len(mapGenerateID) > 0 {
+								CheckJsonData(subData, mapGenerateID[0])
+							} else {
+								CheckJsonData(subData)
+							}
 						}
 					}
 
