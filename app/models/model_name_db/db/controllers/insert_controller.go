@@ -30,7 +30,7 @@ var logrusFieldMongodbCreateController = structs.LogrusField{
 	Module: "MongodbCreateController",
 }
 
-func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService) (bool, interface{}) {
+func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService,mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbCreateController
 	logrusField.Method = "InsertDocumentObj"
 
@@ -44,11 +44,14 @@ func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService) 
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
+	if len(mapGenerateID) > 0 {
+		return create.InsertDocument(c,mapGenerateID[0])
+	}
 	return create.InsertDocument(c)
 }
 
 // InsertDocument is for Document insert
-func (create *CreateController) InsertDocument(c *gin.Context) (bool, interface{}) {
+func (create *CreateController) InsertDocument(c *gin.Context,mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbCreateController
 	logrusField.Method = "InsertDocument"
 
@@ -73,7 +76,11 @@ func (create *CreateController) InsertDocument(c *gin.Context) (bool, interface{
 
 	//Check if Condition is empty
 	if len(condition) == 0 {
-		resultStatus, resultData = insertNewDocument(jsonbody, c)
+		if len(mapGenerateID) > 0 { 
+			resultStatus, resultData = insertNewDocument(jsonbody, c,mapGenerateID[0])
+		} else {
+			resultStatus, resultData = insertNewDocument(jsonbody, c,)
+		}
 	} else {
 		resultStatus, resultData = insertWithCondition(jsonbody, c)
 	}
@@ -82,7 +89,7 @@ func (create *CreateController) InsertDocument(c *gin.Context) (bool, interface{
 }
 
 // InsertNewDocument is for insert new document
-func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context) (bool, interface{}) {
+func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context,mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbCreateController
 	logrusField.Method = "insertNewDocument"
 
@@ -141,17 +148,9 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context) (bool, interfa
 		//Set document id with prefix
 		jsondata["id"] = utils.GenerateID("Dc")
 		jsondata["last_updated"] = time.Now()
-		for key, result := range jsondata {
-			//check jsondata contain document in array
-			if result != nil {
-				if reflect.TypeOf(result).Kind().String() == "slice" {
-					for _, r := range jsondata[key].([]interface{}) {
-						if reflect.TypeOf(r).Kind().String() == "map" {
-							r.(map[string]interface{})["id"] = utils.GenerateID("Ar")
-						}
-					}
-				}
-			}
+		if len(mapGenerateID) > 0 {  // มีการ ระบุ field ที่ต้องการ gen id  , หากไม่ระบุมา จะ genให้แค่ id ชั้นนอก field เดียว
+
+			jsondata = utils.CheckJsonData(jsondata,mapGenerateID[0])
 		}
 
 		id, err, col := userservice.InsertOneDocument(jsondata, jsonbody.Collection)

@@ -638,7 +638,7 @@ func MapOperators(str string) string {
 	return str
 }
 
-func CheckJsonData(jsondata map[string]interface{}) map[string]interface{} {
+func CheckJsonData(jsondata map[string]interface{},mapGenerateID ...[]string) map[string]interface{} {
 	for key, result := range jsondata {
 		//check jsondata contain utils in array
 		if reflect.TypeOf(result).Kind().String() == "slice" {
@@ -668,7 +668,7 @@ func CheckJsonData(jsondata map[string]interface{}) map[string]interface{} {
 						}
 					}
 
-					if key != "image" {
+					if key != "image" && ContainInSlice(mapGenerateID[0], key) == true {
 						if _, ok := r.(map[string]interface{})["id"]; !ok {
 							r.(map[string]interface{})["id"] = GenerateID("Ar")
 						}

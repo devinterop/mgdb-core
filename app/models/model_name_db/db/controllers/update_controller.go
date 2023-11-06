@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 
 	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
 	"github.com/devinterop/mgdb-core/app/structs"
@@ -30,7 +29,7 @@ var logrusFieldMongodbUpdateController = structs.LogrusField{
 	Module: "MongodbUpdateController",
 }
 
-func (u *UpdateController) UpdateDocumentObj(jsonPost structs.JsonService) (bool, interface{}) {
+func (u *UpdateController) UpdateDocumentObj(jsonPost structs.JsonService, mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbUpdateController
 	logrusField.Method = "UpdateDocumentObj"
 
@@ -44,12 +43,14 @@ func (u *UpdateController) UpdateDocumentObj(jsonPost structs.JsonService) (bool
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
-
+	if len(mapGenerateID) > 0 {
+		return u.UpdateDocument(c, mapGenerateID[0])
+	}
 	return u.UpdateDocument(c)
 }
 
 // UpdateDocument is for
-func (u *UpdateController) UpdateDocument(c *gin.Context) (bool, interface{}) {
+func (u *UpdateController) UpdateDocument(c *gin.Context, mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbUpdateController
 	logrusField.Method = "UpdateDocument"
 
@@ -85,8 +86,11 @@ func (u *UpdateController) UpdateDocument(c *gin.Context) (bool, interface{}) {
 		return resultStatus, resultData
 	} else if !(*jsonbody.Multi) {
 		// set to false
-		// fmt.Println("updateOneDocument = = ")
-		resultStatus, resultData = updateOneDocument(jsonbody, c)
+		if len(mapGenerateID) > 0 {
+			resultStatus, resultData = updateOneDocument(jsonbody, c, mapGenerateID[0])
+		} else {
+			resultStatus, resultData = updateOneDocument(jsonbody, c)
+		}
 	} else {
 		// set to true
 		// fmt.Println("updateMultipleDocument = = ")
@@ -96,7 +100,7 @@ func (u *UpdateController) UpdateDocument(c *gin.Context) (bool, interface{}) {
 	return resultStatus, resultData
 }
 
-func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context) (bool, interface{}) {
+func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbUpdateController
 	logrusField.Method = "updateOneDocument"
 
@@ -107,24 +111,27 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context) (bool, interfa
 	}
 
 	jsondata := jsonbody.Data.(map[string]interface{})
-	for key, result := range jsondata {
-		//check jsondata contain array
-		if reflect.TypeOf(result).Kind().String() == "slice" {
-			//check jsondata contain document in array
-			for _, r := range jsondata[key].([]interface{}) {
-				if reflect.TypeOf(r).Kind().String() == "map" {
-					if _, ok := r.(map[string]interface{})["id"]; !ok {
-						newId := utils.GenerateID("Ar")
-						r.(map[string]interface{})["id"] = newId
-					}
-				}
-			}
-		} else if reflect.TypeOf(result).Kind().String() == "map" {
-			// if _, ok := result.(map[string]interface{})["id"]; !ok {
-			// 	result.(map[string]interface{})["id"] = utils.GenerateID("Ar")
-			// }
-		}
+	if len(mapGenerateID) > 0 { // มีการ ระบุ field ที่ต้องการ gen id  , หากไม่ระบุมา จะ genให้แค่ id ชั้นนอก field เดียว
+		jsondata = utils.CheckJsonData(jsondata, mapGenerateID[0])
 	}
+	// for key, result := range jsondata {    //old
+	// 	//check jsondata contain array
+	// 	if reflect.TypeOf(result).Kind().String() == "slice" {
+	// 		//check jsondata contain document in array
+	// 		for _, r := range jsondata[key].([]interface{}) {
+	// 			if reflect.TypeOf(r).Kind().String() == "map" {
+	// 				if _, ok := r.(map[string]interface{})["id"]; !ok {
+	// 					newId := utils.GenerateID("Ar")
+	// 					r.(map[string]interface{})["id"] = newId
+	// 				}
+	// 			}
+	// 		}
+	// 	} else if reflect.TypeOf(result).Kind().String() == "map" {
+	// 		// if _, ok := result.(map[string]interface{})["id"]; !ok {
+	// 		// 	result.(map[string]interface{})["id"] = utils.GenerateID("Ar")
+	// 		// }
+	// 	}
+	// }   //old
 	update := bson.M{}
 
 	userservice := service.UpdateService{}
