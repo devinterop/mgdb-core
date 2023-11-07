@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/devinterop/mgdb-core/app/structs"
@@ -46,4 +48,18 @@ func checkCollectionExist(collection string) bool {
 		}
 	}
 	return false
+}
+
+// get len Documents
+// checkCollectionExist is to check collection exist or not
+func CountDocuments(collection string, data primitive.M) (int64, error) {
+	if !checkCollectionExist(collection) {
+		return 0, nil
+	}
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+
+	count, err := Database.Collection(collection).CountDocuments(ctx, data)
+	defer cancel()
+
+	return count, err
 }

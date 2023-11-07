@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	modelCtrl "github.com/devinterop/mgdb-core/app/models/model_name_db/db/controllers"
 	"github.com/devinterop/mgdb-core/app/structs"
@@ -67,6 +68,47 @@ func (s ServiceModel) SendApi(data []byte, url string, requestType string, heade
 	// log.Println("response Body:", string(body))
 
 	return string(body)
+}
+
+// เพิ่ม Status
+func (s ServiceModel) SendApiWithStatus(data []byte, url string, requestType string, header string) (string, string) {
+	logrusField := logrusFieldFusionauth
+	logrusField.Method = "SendApiWithStatus"
+
+	// url := "http://phr.mch.mfu.ac.th/servicedev/rest/rsservice/dataOperatePost"
+	// log.Println("URL:>", url)
+	var jsonStr = []byte(string(data))
+	// log.Println("jsonStr post:", string(data))
+	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		fmt.Println("err ==", err.Error())
+		panic(err)
+	}
+	req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+	if len(header) != 0 {
+		req.Header.Add("token", header)
+	} else {
+		req.Header.Add("token", "")
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	// log.Println("response Status:", resp.Status)
+	logging.Logger(cnst.Info, fmt.Sprint("Response Status:", resp.StatusCode), logrusField)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	// log.Println("response Body:", string(body))
+
+	return string(body), string(resp.Status)
 }
 
 func GetDocumentId(filterName string, filterVal interface{}, Collection string) string {
@@ -201,6 +243,60 @@ func (s ServiceModel) SendApiHeaders(data []byte, url string, requestType string
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		panic(err)
+	}
+	// log.Println("response Body:", string(body))
+
+	return string(body), string(resp.Status)
+}
+
+// ส่งข้อมูล
+func (s ServiceModel) SendApiBearerHeader(data []byte, url string, requestType string, headers map[string]interface{}) (string, string) {
+	logrusField := logrusFieldFusionauth
+	logrusField.Method = "SendApiBearerHeader"
+	// url := "http://phr.mch.mfu.ac.th/servicedev/rest/rsservice/dataOperatePost"
+	// log.Println("URL:>", url)
+	logging.Logger(cnst.Info, fmt.Sprint("URL:> ", url), logrusField)
+
+	var jsonStr = []byte(string(data))
+	// log.Println("jsonStr post:", string(data))
+	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		fmt.Println("1")
+		panic(err)
+	}
+	req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+	// headers := make(map[string]interface{})
+	// // apiKey := "a1LDdM6OvOxNsvqgCQCqFP7QHZDFvu5e"
+	// apiKey := utils.ViperEnvVariable("IMED-BRD-APIKEY")
+	// // fmt.Println("apiKey :: ", apiKey)
+	// headers["APIKEY"] = apiKey
+	if len(headers) != 0 {
+		for k, v := range headers {
+			if strings.Contains(fmt.Sprint(k), "Authorization") {
+				req.Header.Add("Authorization", "Bearer "+fmt.Sprint(v))
+			} else {
+				req.Header.Add(k, fmt.Sprint(v))
+			}
+
+		}
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		// return "" , ""
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	// log.Println("response Status:", resp.Status)
+	//log.Println("response Status:", resp.Status)
+	logging.Logger(cnst.Info, fmt.Sprint("Response Status:", resp.StatusCode), logrusField)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		// fmt.Println("3")
 		panic(err)
 	}
 	// log.Println("response Body:", string(body))
