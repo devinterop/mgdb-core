@@ -43,8 +43,10 @@ func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService, mapCon
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
-
-	return auth.FindDocument(c, jsonPost, false, mapCon[0])
+	if len(mapCon) > 0 {
+		return auth.FindDocument(c, jsonPost, false, mapCon[0])
+	}
+	return auth.FindDocument(c, jsonPost, false)
 }
 
 // / count = true ; only count document non get data

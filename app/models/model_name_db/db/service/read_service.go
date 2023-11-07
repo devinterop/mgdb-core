@@ -49,9 +49,9 @@ func (readservice ReadService) AggregateDocument(data []bson.M, collection strin
 }
 
 func (readservice ReadService) FindDocument(filter bson.M, projection bson.M, collection string, sort interface{}, limit int64, skip int64) (interface{}, error, bool) {
-	if !checkCollectionExist(collection) {
-		return nil, nil, false
-	}
+	// if !checkCollectionExist(collection) {
+	// 	return nil, nil, false
+	// }
 
 	result := []bson.M{}
 	opts := options.Find()
