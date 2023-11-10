@@ -24,6 +24,11 @@ import (
 var logrusFieldMongodb = structs.LogrusField{
 	Module: "Mongodb",
 }
+var Database *mongo.Database
+
+func GetDBConnected() *mongo.Database {
+	return Database
+}
 
 // Connect is for get mongo driver connection
 func Connect(connectionString string, dbName string, userDb string, passDb string) {
@@ -58,6 +63,7 @@ func Connect(connectionString string, dbName string, userDb string, passDb strin
 
 	//Connect to the database
 	db := client.Database(dbName)
+	Database = db
 	service.DBConnection(db)
 
 	return
