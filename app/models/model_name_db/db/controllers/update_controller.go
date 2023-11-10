@@ -116,17 +116,17 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 	}
 	// for key, result := range jsondata {    //old
 	// 	//check jsondata contain array
-	// 	if reflect.TypeOf(result).Kind().String() == "slice" {
+	// 	if reflect.TypeOf(result).Kind() == reflect.Slice {
 	// 		//check jsondata contain document in array
 	// 		for _, r := range jsondata[key].([]interface{}) {
-	// 			if reflect.TypeOf(r).Kind().String() == "map" {
+	// 			if reflect.TypeOf(r).Kind() == reflect.Map {
 	// 				if _, ok := r.(map[string]interface{})["id"]; !ok {
 	// 					newId := utils.GenerateID("Ar")
 	// 					r.(map[string]interface{})["id"] = newId
 	// 				}
 	// 			}
 	// 		}
-	// 	} else if reflect.TypeOf(result).Kind().String() == "map" {
+	// 	} else if reflect.TypeOf(result).Kind() == reflect.Map {
 	// 		// if _, ok := result.(map[string]interface{})["id"]; !ok {
 	// 		// 	result.(map[string]interface{})["id"] = utils.GenerateID("Ar")
 	// 		// }

@@ -2,6 +2,9 @@ package db
 
 import (
 	"context"
+	"errors"
+	"reflect"
+	"strings"
 
 	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
 
@@ -75,4 +78,53 @@ func CollectionList(db *mongo.Database) []string {
 		return nil
 	}
 	return names
+}
+func CollectionValidate(db *mongo.Database, collections interface{}) {
+	var collectionArr []string
+	v := reflect.ValueOf(collections)
+	for i := 0; i < v.NumField(); i++ {
+		collectionArr = append(collectionArr, v.Field(i).String())
+	}
+	errCollect := validateCollection(db, collectionArr)
+	if errCollect != nil {
+		panic(errCollect)
+	}
+	return
+}
+
+func validateCollection(db *mongo.Database, listCollection []string) error {
+	logrusField := logrusFieldMongodb
+	logrusField.Method = "ValidateCollection"
+	//Check collection is not empty
+	//  checkbool := false
+	lenColl := len(listCollection)
+	lenCollTemp := 0
+	var notMap []string
+	var newError error = nil
+	filter := bson.D{{}}
+	collectionList, err := db.ListCollectionNames(context.TODO(), filter)
+	if err != nil {
+		// Handle error
+		logging.Logger(cnst.Info, fmt.Sprint("Failed to get  ListCollectionNames ", err), logrusField)
+		return nil
+	}
+	elementMap := make(map[string]string)
+	for _, s := range collectionList {
+		elementMap[s] = s
+		// or just keys, without values: elementMap[s] = ""
+	}
+
+	for _, name := range listCollection {
+		_, found := elementMap[name]
+		if found {
+			lenCollTemp++
+		} else {
+			logging.Logger(cnst.Info, fmt.Sprint("Not Found the collection names : %v", name), logrusField)
+			notMap = append(notMap, name)
+		}
+	}
+	if lenCollTemp != lenColl {
+		newError = errors.New(strings.Join(notMap, " "))
+	}
+	return newError
 }

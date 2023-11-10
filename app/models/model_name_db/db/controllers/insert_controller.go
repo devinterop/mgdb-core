@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"time"
 
-	//"github.com/devinterop/mgdb-core/app/models/model_name_db/structs"
 	"github.com/devinterop/mgdb-core/app/structs"
 	"github.com/devinterop/mgdb-core/packages/logging"
 	"github.com/devinterop/mgdb-core/utils"
@@ -30,7 +29,7 @@ var logrusFieldMongodbCreateController = structs.LogrusField{
 	Module: "MongodbCreateController",
 }
 
-func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService,mapGenerateID ...[]string) (bool, interface{}) {
+func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService, mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbCreateController
 	logrusField.Method = "InsertDocumentObj"
 
@@ -45,13 +44,13 @@ func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService,m
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
 	if len(mapGenerateID) > 0 {
-		return create.InsertDocument(c,mapGenerateID[0])
+		return create.InsertDocument(c, mapGenerateID[0])
 	}
 	return create.InsertDocument(c)
 }
 
 // InsertDocument is for Document insert
-func (create *CreateController) InsertDocument(c *gin.Context,mapGenerateID ...[]string) (bool, interface{}) {
+func (create *CreateController) InsertDocument(c *gin.Context, mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbCreateController
 	logrusField.Method = "InsertDocument"
 
@@ -76,10 +75,10 @@ func (create *CreateController) InsertDocument(c *gin.Context,mapGenerateID ...[
 
 	//Check if Condition is empty
 	if len(condition) == 0 {
-		if len(mapGenerateID) > 0 { 
-			resultStatus, resultData = insertNewDocument(jsonbody, c,mapGenerateID[0])
+		if len(mapGenerateID) > 0 {
+			resultStatus, resultData = insertNewDocument(jsonbody, c, mapGenerateID[0])
 		} else {
-			resultStatus, resultData = insertNewDocument(jsonbody, c,)
+			resultStatus, resultData = insertNewDocument(jsonbody, c)
 		}
 	} else {
 		resultStatus, resultData = insertWithCondition(jsonbody, c)
@@ -89,7 +88,7 @@ func (create *CreateController) InsertDocument(c *gin.Context,mapGenerateID ...[
 }
 
 // InsertNewDocument is for insert new document
-func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context,mapGenerateID ...[]string) (bool, interface{}) {
+func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbCreateController
 	logrusField.Method = "insertNewDocument"
 
@@ -118,9 +117,9 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context,mapGenerateID .
 			doc.(map[string]interface{})["last_updated"] = time.Now()
 			for _, result := range doc.(map[string]interface{}) {
 				// check jsondata contain document in array
-				if reflect.TypeOf(result).Kind().String() == "slice" {
+				if reflect.TypeOf(result).Kind() == reflect.Slice {
 					for _, r := range result.([]interface{}) {
-						if reflect.TypeOf(r).Kind().String() == "map" {
+						if reflect.TypeOf(r).Kind() == reflect.Map {
 							r.(map[string]interface{})["id"] = utils.GenerateID("Ar")
 						}
 					}
@@ -148,9 +147,9 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context,mapGenerateID .
 		//Set document id with prefix
 		jsondata["id"] = utils.GenerateID("Dc")
 		jsondata["last_updated"] = time.Now()
-		if len(mapGenerateID) > 0 {  // มีการ ระบุ field ที่ต้องการ gen id  , หากไม่ระบุมา จะ genให้แค่ id ชั้นนอก field เดียว
+		if len(mapGenerateID) > 0 { // มีการ ระบุ field ที่ต้องการ gen id  , หากไม่ระบุมา จะ genให้แค่ id ชั้นนอก field เดียว
 
-			jsondata = utils.CheckJsonData(jsondata,mapGenerateID[0])
+			jsondata = utils.CheckJsonData(jsondata, mapGenerateID[0])
 		}
 
 		id, err, col := userservice.InsertOneDocument(jsondata, jsonbody.Collection)
@@ -182,7 +181,7 @@ func insertWithCondition(jsonbody structs.JsonBody, c *gin.Context) (bool, inter
 	condition := jsonbody.Condition.(map[string]interface{})
 	for _, result := range condition {
 		//check jsondata contain document in array
-		if reflect.TypeOf(result).Kind().String() == "map" {
+		if reflect.TypeOf(result).Kind() == reflect.Map {
 			for k, r := range result.(map[string]interface{}) {
 				if k != utils.MapOperators(k) {
 					result.(map[string]interface{})[utils.MapOperators(k)] = r
@@ -195,11 +194,11 @@ func insertWithCondition(jsonbody structs.JsonBody, c *gin.Context) (bool, inter
 	jsondata := jsonbody.Data.(map[string]interface{})
 	for key, result := range jsondata {
 		//check jsondata contain array
-		if reflect.TypeOf(result).Kind().String() == "slice" {
+		if reflect.TypeOf(result).Kind() == reflect.Slice {
 			//check jsondata contain document in array
 			for _, r := range jsondata[key].([]interface{}) {
 				//fmt.Println(r)
-				if reflect.TypeOf(r).Kind().String() == "map" {
+				if reflect.TypeOf(r).Kind() == reflect.Map {
 					if _, ok := r.(map[string]interface{})["id"]; !ok {
 						newId = utils.GenerateID("Ar")
 						r.(map[string]interface{})["id"] = newId
@@ -211,7 +210,7 @@ func insertWithCondition(jsonbody structs.JsonBody, c *gin.Context) (bool, inter
 					"$each": result,
 				}
 			}
-		} else if reflect.TypeOf(result).Kind().String() == "map" {
+		} else if reflect.TypeOf(result).Kind() == reflect.Map {
 
 			result.(map[string]interface{})["id"] = utils.GenerateID("Ar")
 		}
