@@ -86,6 +86,8 @@ func CollectionList(db *mongo.Database) []string {
 	return names
 }
 func CollectionValidate(db *mongo.Database, collections interface{}) {
+	logrusField := logrusFieldMongodb
+	logrusField.Method = "CollectionValidate"
 	var collectionArr []string
 	v := reflect.ValueOf(collections)
 	for i := 0; i < v.NumField(); i++ {
@@ -93,7 +95,8 @@ func CollectionValidate(db *mongo.Database, collections interface{}) {
 	}
 	errCollect := validateCollection(db, collectionArr)
 	if errCollect != nil {
-		panic(errCollect)
+		logging.Logger(cnst.Fatal, fmt.Sprint("Failed to validate collection: ", errCollect), logrusField)
+		// panic(errCollect)
 	}
 	return
 }
