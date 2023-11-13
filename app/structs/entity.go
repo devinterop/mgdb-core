@@ -2,21 +2,23 @@ package structs
 
 //Jsonbody struct is to handle Json body request
 type JsonBody struct {
-	Collection   string      `json:"collection"`
-	Reference    string      `json:"reference"`
-	Condition    interface{} `json:"condition"`
-	Data         interface{} `json:"data"`
-	Projection   interface{} `json:"projection"`
-	ArrayFilter  interface{} `json:"arrayFilter"`
-	Sort         interface{} `json:"sort"`
-	Limit        int         `json:"limit"`
-	Offset       int         `json:"offset"`
-	Timezone     string      `json:"timezone"`
-	Atomicity    bool        `json:"atomicity"`
-	Duplicate    *bool       `json:"duplicate"`
-	Multi        *bool       `json:"multi"`
-	Replacement  *bool       `json:"replacement"`
-	UpdateFilter interface{} `json:"updateFilter"`
+	Collection        string      `json:"collection"`
+	Reference         string      `json:"reference"`
+	Condition         interface{} `json:"condition"`
+	Data              interface{} `json:"data"`
+	Projection        interface{} `json:"projection"`
+	ArrayFilter       interface{} `json:"arrayFilter"`
+	Sort              interface{} `json:"sort"`
+	Limit             int         `json:"limit"`
+	Offset            int         `json:"offset"`
+	Timezone          string      `json:"timezone"`
+	Atomicity         bool        `json:"atomicity"`
+	Duplicate         *bool       `json:"duplicate"`
+	Multi             *bool       `json:"multi"`
+	Replacement       *bool       `json:"replacement"`
+	UpdateFilter      interface{} `json:"updateFilter"`
+	FindOne           *bool       `json:"findone"`
+	AggregatePipeline interface{} `json:"aggregatePipeline"`
 }
 
 type JsonResponse struct {
@@ -47,21 +49,23 @@ type JsonReadbody struct {
 
 //Jsonbody to service
 type JsonService struct {
-	Collection   string      `json:"collection"`
-	Reference    string      `json:"reference"`
-	Condition    interface{} `json:"condition"`
-	Data         interface{} `json:"data"`
-	Projection   interface{} `json:"projection"`
-	ArrayFilter  interface{} `json:"arrayFilter"`
-	Sort         interface{} `json:"sort"`
-	Limit        int         `json:"limit"`
-	Offset       int         `json:"offset"`
-	Timezone     string      `json:"timezone"`
-	Atomicity    bool        `json:"atomicity"`
-	Duplicate    bool        `json:"duplicate"`
-	Multi        bool        `json:"multi"`
-	Replacement  bool        `json:"replacement"`
-	UpdateFilter interface{} `json:"updateFilter"`
+	Collection        string      `json:"collection"`
+	Reference         string      `json:"reference"`
+	Condition         interface{} `json:"condition"`
+	Data              interface{} `json:"data"`
+	Projection        interface{} `json:"projection"`
+	ArrayFilter       interface{} `json:"arrayFilter"`
+	Sort              interface{} `json:"sort"`
+	Limit             int         `json:"limit"`
+	Offset            int         `json:"offset"`
+	Timezone          string      `json:"timezone"`
+	Atomicity         bool        `json:"atomicity"`
+	Duplicate         bool        `json:"duplicate"`
+	Multi             bool        `json:"multi"`
+	Replacement       bool        `json:"replacement"`
+	UpdateFilter      interface{} `json:"updateFilter"`
+	FindOne           bool        `json:"findone"`
+	AggregatePipeline interface{} `json:"aggregatePipeline"`
 }
 
 //Jsonbody struct is to handle Json body request

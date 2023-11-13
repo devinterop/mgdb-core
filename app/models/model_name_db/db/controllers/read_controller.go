@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 
 	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
 	//"github.com/devinterop/mgdb-core/app/structs"
@@ -116,28 +117,33 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonSe
 		}
 		condition = mergeMaps(v...)
 	}
-
+	if jsonbody.AggregatePipeline != nil {
+		aggregate = true
+	}
 	//find with aggregate
 	if aggregate {
 		pipeline := []bson.M{}
-
-		condition = bson.M{"$match": condition}
-		projection = bson.M{"$project": projection}
-		sort := bson.M{"$sort": jsonbody.Sort}
-		limits := bson.M{"$limit": limit}
-		skips := bson.M{"$skip": skip}
-		addFields := bson.M{"$addFields": date}
-
-		if len(date) != 0 && len(con) != 0 {
-			pipeline = []bson.M{condition, projection, addFields, sort, skips, limits}
-		} else if len(date) == 0 && len(con) != 0 {
-			pipeline = []bson.M{condition, projection, sort, skips, limits}
-		} else if len(date) != 0 && len(con) == 0 {
-			pipeline = []bson.M{projection, addFields, sort, skips, limits}
+		if reflect.TypeOf(jsonbody.AggregatePipeline).Kind() == reflect.Slice {
+			pipelines := jsonbody.AggregatePipeline.([]bson.M)
+			pipeline = pipelines
 		} else {
-			pipeline = []bson.M{projection, sort, skips, limits}
-		}
+			condition = bson.M{"$match": condition}
+			projection = bson.M{"$project": projection}
+			sort := bson.M{"$sort": jsonbody.Sort}
+			limits := bson.M{"$limit": limit}
+			skips := bson.M{"$skip": skip}
+			addFields := bson.M{"$addFields": date}
 
+			if len(date) != 0 && len(con) != 0 {
+				pipeline = []bson.M{condition, projection, addFields, sort, skips, limits}
+			} else if len(date) == 0 && len(con) != 0 {
+				pipeline = []bson.M{condition, projection, sort, skips, limits}
+			} else if len(date) != 0 && len(con) == 0 {
+				pipeline = []bson.M{projection, addFields, sort, skips, limits}
+			} else {
+				pipeline = []bson.M{projection, sort, skips, limits}
+			}
+		}
 		//fmt.Println("Aggregate(): ", pipeline)
 		logging.Logger(cnst.Debug, fmt.Sprint("Aggregate: ", pipeline), logrusField)
 
@@ -179,21 +185,40 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonSe
 				return false, nil
 			}
 		}
-		result, err, collection := userservice.FindDocument(filter, projection, jsonbody.Collection, jsonbody.Sort, int64(limit), int64(skip))
-		if err != nil || !collection {
-			if !collection {
-				// 500
-				c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
+		if jsonbody.FindOne {
+			result, err, collection := userservice.FindOneDocument(filter, projection, jsonbody.Collection, jsonbody.Sort, int64(skip))
+			if err != nil || !collection {
+				if !collection {
+					// 500
+					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
+				} else {
+					// 500
+					logging.Logger(cnst.Error, fmt.Sprint("userservice.FindDocument(): error: ", err.Error()), logrusField)
+					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
+				}
 			} else {
-				// 500
-				logging.Logger(cnst.Error, fmt.Sprint("userservice.FindDocument(): error: ", err.Error()), logrusField)
-				c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
+				// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
+				resultStatus = true
+				resultData = result
+
 			}
 		} else {
-			// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
-			resultStatus = true
-			resultData = result
+			result, err, collection := userservice.FindDocument(filter, projection, jsonbody.Collection, jsonbody.Sort, int64(limit), int64(skip))
+			if err != nil || !collection {
+				if !collection {
+					// 500
+					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
+				} else {
+					// 500
+					logging.Logger(cnst.Error, fmt.Sprint("userservice.FindDocument(): error: ", err.Error()), logrusField)
+					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
+				}
+			} else {
+				// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
+				resultStatus = true
+				resultData = result
 
+			}
 		}
 	}
 	return resultStatus, resultData

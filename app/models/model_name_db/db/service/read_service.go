@@ -112,3 +112,17 @@ func (readservice ReadService) FindDocumentCount(filter bson.M, projection bson.
 
 	return no, err, true
 }
+
+func (readservice ReadService) FindOneDocument(filter bson.M, projection bson.M, collection string, sort interface{}, skip int64) (interface{}, error, bool) {
+	opts := options.FindOne()
+	opts.SetProjection(projection)
+	opts.SetSort(sort)
+	opts.SetSkip(skip)
+	result := bson.M{}
+	err := Database.Collection(collection).FindOne(context.TODO(), filter, opts).Decode(&result)
+	if err != nil {
+		return nil, mongo.ErrNoDocuments, false
+	}
+
+	return result, err, true
+}
