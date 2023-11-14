@@ -9,6 +9,8 @@ import (
 	"reflect"
 
 	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
+	"github.com/devinterop/mgdb-core/utils"
+
 	//"github.com/devinterop/mgdb-core/app/structs"
 	"github.com/devinterop/mgdb-core/app/structs"
 
@@ -16,11 +18,11 @@ import (
 
 	//"github.com/devinterop/mgdb-core/app/models/model_name_db/structs"
 	"github.com/devinterop/mgdb-core/packages/logging"
-	"github.com/devinterop/mgdb-core/utils"
 
 	cnst "github.com/devinterop/mgdb-core/cnst"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ReadController is for insert logic
@@ -73,9 +75,12 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonService, count bool, mapCon ...map[string]interface{}) (bool, interface{}) {
 	logrusField := logrusFieldMongodbReadController
 	logrusField.Method = "FindDocument"
+	logging.Logger(cnst.Debug, fmt.Sprint("filter:FindDocument ", jsonbody.Condition), logrusField)
 
 	var resultStatus bool
 	var resultData interface{}
+	var con interface{}
+	var primitiveType primitive.M
 	// var jsonbody structs.JsonBody
 	//Check if jsonbody is not following struck format
 	// if err := c.ShouldBindJSON(&jsonbody); err != nil {
@@ -94,17 +99,22 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonSe
 	skip := limit * (jsonbody.Offset - 1)
 
 	//Projection
-	pro, e := jsonbody.Projection.(map[string]interface{})
-	if e {
-	}
-	projection, date, aggregate := projectionSet(pro, jsonbody.Timezone)
+	// pro, e := jsonbody.Projection.(map[string]interface{})
+	// if e {
+	// }
+	projection, date, aggregate := projectionSet(jsonbody.Projection, jsonbody.Timezone)
 
-	//Condition
-	con, e := jsonbody.Condition.(map[string]interface{})
-	if e {
+	if reflect.TypeOf(jsonbody.Condition) == reflect.TypeOf(primitiveType) {
+		con = jsonbody.Condition
+	} else {
+		con, _ = jsonbody.Condition.(map[string]interface{})
 	}
+	// con, e := jsonbody.Condition.(map[string]interface{})
+	// logging.Logger(cnst.Debug, fmt.Sprint("filter:FindDocument ", con["id"]), logrusField)
+	// if e {
+	// }
 	condition := utils.ConvertOperators(con).(map[string]interface{})
-
+	// condition := con
 	//arrayFilter
 	// arr, err := jsonbody.ArrayFilter.(map[string]interface{})
 	// if err {}
@@ -134,11 +144,11 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonSe
 			skips := bson.M{"$skip": skip}
 			addFields := bson.M{"$addFields": date}
 
-			if len(date) != 0 && len(con) != 0 {
+			if len(date) != 0 && len(condition) != 0 {
 				pipeline = []bson.M{condition, projection, addFields, sort, skips, limits}
-			} else if len(date) == 0 && len(con) != 0 {
+			} else if len(date) == 0 && len(condition) != 0 {
 				pipeline = []bson.M{condition, projection, sort, skips, limits}
-			} else if len(date) != 0 && len(con) == 0 {
+			} else if len(date) != 0 && len(condition) == 0 {
 				pipeline = []bson.M{projection, addFields, sort, skips, limits}
 			} else {
 				pipeline = []bson.M{projection, sort, skips, limits}
@@ -262,84 +272,6 @@ func projectionSet(p interface{}, timezone string) (bson.M, bson.M, bool) {
 	return projection, dateList, aggregate
 }
 
-// //conditionSet is for setup condition data
-// func conditionSet(c interface{}) (bson.M) {
-// 	//if the argument is not a map, ignore it
-//     condition, ok := c.(map[string]interface{})
-
-//     if !ok {
-//         return nil
-//     }
-// 	// fmt.Println(condition)
-//     for _, v := range condition {
-// 		// fmt.Println(k)
-
-//         // key match
-// 		// if k != utils.MapStr(k) {
-// 			// condition[utils.MapStr(k)] = v
-// 		// 	delete(condition, k)
-// 		// }
-
-//         // if the value is a map, search recursively
-//         if m, ok := v.(map[string]interface{}); ok {
-//             conditionSet(m)
-//         }
-//         // if the value is an array, search recursively
-//         // from each element
-//         if va, ok := v.([]interface{}); ok {
-//             for _, a := range va {
-//                 conditionSet(a)
-//             }
-//         }
-//     }
-
-//     return condition
-// }
-
-// jsonCondition := `
-//
-//					{
-//						"id": "5bf142459b72e12b2b1b2cd1",
-//						"$or": [
-//							{
-//								"sizes": {
-//									"$elemMatch": {
-//										"id": "5bf142459b72e12b2b1b2af2",
-//										"quantity": {
-//											"$gt": 0
-//										}
-//									},
-//									"$and": [
-//										{
-//											"sizes.uk": "7"
-//										},
-//										{
-//											"sizes.quantity": 0
-//										}
-//									]
-//								}
-//							},
-//							{
-//								"colors": {
-//									"$all": [
-//										"Black",
-//										"White"
-//									]
-//								}
-//							},
-//							{
-//								"sizes": {
-//									"$in": [
-//										"M",
-//										"L"
-//									]
-//								}
-//							}
-//						]
-//					}
-//				`
-//	var condition map[string]interface{}
-//	json.Unmarshal([]byte(jsonCondition), &condition)
 func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for _, m := range maps {
