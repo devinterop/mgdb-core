@@ -1,9 +1,9 @@
 package conf
 
 import (
+	"log"
+
 	"github.com/devinterop/mgdb-core/app/structs"
-	cnst "github.com/devinterop/mgdb-core/cnst"
-	"github.com/devinterop/mgdb-core/packages/logging"
 	"github.com/devinterop/mgdb-core/utils"
 	"github.com/spf13/viper"
 )
@@ -17,8 +17,8 @@ var logrusFieldConfig = structs.LogrusField{
 // Init is an exported method that takes the environment starts the viper
 // (external lib) and returns the configuration struct.
 func InitConfigYaml(env string) {
-	logrusField := logrusFieldConfig
-	logrusField.Method = "InitConfigYaml"
+	// logrusField := logrusFieldConfig
+	// logrusField.Method = "InitConfigYaml"
 
 	//var err error
 	var viperYaml = viper.New()
@@ -32,8 +32,8 @@ func InitConfigYaml(env string) {
 	// เริ่มการค้นหาไฟล์ Config และอ่านไฟล์
 	err := viperYaml.ReadInConfig()
 	if err != nil {
-		//log.Fatal("error on parsing configuration file")
-		logging.Logger(cnst.Fatal, "error on parsing yaml configuration file", logrusField)
+		log.Fatal("error on parsing configuration file")
+		// logging.Logger(cnst.Fatal, "error on parsing yaml configuration file", logrusField)
 	} else {
 		utils.SetViperYaml(viperYaml)
 	}
@@ -41,8 +41,8 @@ func InitConfigYaml(env string) {
 }
 
 func InitConfigJson(file string) {
-	logrusField := logrusFieldConfig
-	logrusField.Method = "InitConfigJson"
+	// logrusField := logrusFieldConfig
+	// logrusField.Method = "InitConfigJson"
 
 	//var err error
 	var viperJson = viper.New()
@@ -56,8 +56,8 @@ func InitConfigJson(file string) {
 	// เริ่มการค้นหาไฟล์ Config และอ่านไฟล์
 	err := viperJson.ReadInConfig()
 	if err != nil {
-		//log.Fatal("error on parsing json configuration file")
-		logging.Logger(cnst.Fatal, "error on parsing json configuration file", logrusField)
+		log.Fatal("error on parsing json configuration file")
+		// logging.Logger(cnst.Fatal, "error on parsing json configuration file", logrusField)
 	} else {
 		utils.SetViperJson(viperJson)
 		//fmt.Println("InitConfigJson(): config: ", targetStruct)
