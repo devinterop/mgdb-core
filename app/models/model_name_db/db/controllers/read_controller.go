@@ -9,7 +9,6 @@ import (
 	"reflect"
 
 	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
-	"github.com/devinterop/mgdb-core/utils"
 
 	//"github.com/devinterop/mgdb-core/app/structs"
 	"github.com/devinterop/mgdb-core/app/structs"
@@ -22,7 +21,6 @@ import (
 	cnst "github.com/devinterop/mgdb-core/cnst"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ReadController is for insert logic
@@ -72,16 +70,27 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 }
 
 // FindDocument is for Document insert
-func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonService, count bool, mapCon ...map[string]interface{}) (bool, interface{}) {
+func (auth *ReadController) FindDocument(c *gin.Context, jsonService structs.JsonService, count bool, mapCon ...map[string]interface{}) (bool, interface{}) {
 	logrusField := logrusFieldMongodbReadController
 	logrusField.Method = "FindDocument"
-	logging.Logger(cnst.Debug, fmt.Sprint("filter:FindDocument ", jsonbody.Condition), logrusField)
+	logging.Logger(cnst.Debug, fmt.Sprint("filter:FindDocument ", jsonService.Condition), logrusField)
 
 	var resultStatus bool
 	var resultData interface{}
-	var con interface{}
-	var primitiveType primitive.M
-	// var jsonbody structs.JsonBody
+	// var con interface{}
+	// var primitiveType primitive.M
+	var jsonbody structs.JsonBody
+
+	bytes, er := json.Marshal(jsonService)
+	{
+		if er == nil {
+			err := json.Unmarshal(bytes, &jsonbody)
+			if err != nil {
+				logging.Logger(cnst.Fatal, err, logrusField)
+			}
+		}
+	}
+
 	//Check if jsonbody is not following struck format
 	// if err := c.ShouldBindJSON(&jsonbody); err != nil {
 	// 	// panic(err)
@@ -104,16 +113,19 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonSe
 	// }
 	projection, date, aggregate := projectionSet(jsonbody.Projection, jsonbody.Timezone)
 
-	if reflect.TypeOf(jsonbody.Condition) == reflect.TypeOf(primitiveType) {
-		con = jsonbody.Condition
-	} else {
-		con, _ = jsonbody.Condition.(map[string]interface{})
-	}
+	// if reflect.TypeOf(jsonbody.Condition) == reflect.TypeOf(primitiveType) {
+	// 	con = jsonbody.Condition.(primitive.M)
+	// } else {
+	// 	logging.Logger(cnst.Error, reflect.TypeOf(jsonbody.Condition), logrusField)
+	// 	logging.Logger(cnst.Error, fmt.Sprint("jsonbody.Condition is not primitive.M"), logrusField)
+	// 	c.JSON(http.StatusBadRequest, "jsonbody.Condition is not primitive.M") // 401 -> 400
+	// 	return resultStatus, resultData
+	// }
 	// con, e := jsonbody.Condition.(map[string]interface{})
 	// logging.Logger(cnst.Debug, fmt.Sprint("filter:FindDocument ", con["id"]), logrusField)
 	// if e {
 	// }
-	condition := utils.ConvertOperators(con).(map[string]interface{})
+	condition := jsonbody.Condition.(map[string]interface{})
 	// condition := con
 	//arrayFilter
 	// arr, err := jsonbody.ArrayFilter.(map[string]interface{})
@@ -195,7 +207,7 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonbody structs.JsonSe
 				return false, nil
 			}
 		}
-		if jsonbody.FindOne {
+		if *jsonbody.FindOne {
 			result, err, collection := userservice.FindOneDocument(filter, projection, jsonbody.Collection, jsonbody.Sort, int64(skip))
 			if err != nil || !collection {
 				if !collection {
