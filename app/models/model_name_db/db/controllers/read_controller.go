@@ -21,6 +21,7 @@ import (
 	cnst "github.com/devinterop/mgdb-core/cnst"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ReadController is for insert logic
@@ -77,6 +78,7 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonService structs.Jso
 
 	var resultStatus bool
 	var resultData interface{}
+	aggregate := false
 	// var con interface{}
 	// var primitiveType primitive.M
 	var jsonbody structs.JsonBody
@@ -91,47 +93,30 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonService structs.Jso
 		}
 	}
 
-	//Check if jsonbody is not following struck format
-	// if err := c.ShouldBindJSON(&jsonbody); err != nil {
-	// 	// panic(err)
-	// 	logging.Logger(cnst.Fatal, err, logrusField)
-	// 	c.JSON(http.StatusBadRequest, err) // 401 -> 400
-	// 	return resultStatus, resultData
-	// }
-	//Check if data is empty
-	if jsonbody.Projection == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "'Projection': required field is not set"}) // 401 -> 400
-		return resultStatus, resultData
+	if jsonbody.AggregatePipeline != nil { //  Aggregate case
+		aggregate = true
+	} else {
+		//Check if data is empty
+		if jsonbody.Projection == nil { //  finddoc case
+			logging.Logger(cnst.Error, gin.H{"error": "'Projection': required field is not set"}, logrusField)
+			return resultStatus, resultData
+		}
 	}
 
 	limit := jsonbody.Limit
 	skip := limit * (jsonbody.Offset - 1)
 
-	//Projection
-	// pro, e := jsonbody.Projection.(map[string]interface{})
-	// if e {
-	// }
-	projection, date, aggregate := projectionSet(jsonbody.Projection, jsonbody.Timezone)
+	projection := bson.M{}
+	date := bson.M{}
+	fmt.Println("jsonbody.Projection = == ", jsonbody.Projection)
+	if jsonbody.Projection != nil {
+		projection, date, aggregate = projectionSet(jsonbody.Projection, jsonbody.Timezone)
+	}
 
-	// if reflect.TypeOf(jsonbody.Condition) == reflect.TypeOf(primitiveType) {
-	// 	con = jsonbody.Condition.(primitive.M)
-	// } else {
-	// 	logging.Logger(cnst.Error, reflect.TypeOf(jsonbody.Condition), logrusField)
-	// 	logging.Logger(cnst.Error, fmt.Sprint("jsonbody.Condition is not primitive.M"), logrusField)
-	// 	c.JSON(http.StatusBadRequest, "jsonbody.Condition is not primitive.M") // 401 -> 400
-	// 	return resultStatus, resultData
-	// }
-	// con, e := jsonbody.Condition.(map[string]interface{})
-	// logging.Logger(cnst.Debug, fmt.Sprint("filter:FindDocument ", con["id"]), logrusField)
-	// if e {
-	// }
-	condition := jsonbody.Condition.(map[string]interface{})
-	// condition := con
-	//arrayFilter
-	// arr, err := jsonbody.ArrayFilter.(map[string]interface{})
-	// if err {}
-	// arrayFilter := mapString(arr).(map[string]interface{})
-	// fmt.Println(arrayFilter)
+	condition := make(map[string]interface{})
+	if jsonbody.Condition != nil {
+		condition = jsonbody.Condition.(map[string]interface{})
+	}
 
 	if len(mapCon) > 0 {
 		v := []map[string]interface{}{
@@ -139,15 +124,22 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonService structs.Jso
 		}
 		condition = mergeMaps(v...)
 	}
-	if jsonbody.AggregatePipeline != nil {
-		aggregate = true
-	}
+	fmt.Println("aggregate = == ", aggregate)
 	//find with aggregate
 	if aggregate {
 		pipeline := []bson.M{}
 		if reflect.TypeOf(jsonbody.AggregatePipeline).Kind() == reflect.Slice {
-			pipelines := jsonbody.AggregatePipeline.([]bson.M)
-			pipeline = pipelines
+			pipelinesInterface := jsonbody.AggregatePipeline.([]interface{})
+			for _, elem := range pipelinesInterface {
+				if doc, ok := elem.(map[string]interface{}); ok {
+					pipeline = append(pipeline, primitive.M(doc))
+				} else {
+					// Handle the case where the element is not a map[string]interface{}
+					fmt.Println("Skipping element:", elem)
+				}
+
+			}
+			// pipeline = pipelinesInterface
 		} else {
 			condition = bson.M{"$match": condition}
 			projection = bson.M{"$project": projection}
