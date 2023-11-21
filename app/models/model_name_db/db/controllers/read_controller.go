@@ -31,6 +31,33 @@ var logrusFieldMongodbReadController = structs.LogrusField{
 	Module: "MongodbReadController",
 }
 
+func (auth *ReadController) FindAggregate(pipeline []primitive.M, collectionName string) (bool, interface{}) {
+	logrusField := logrusFieldMongodbReadController
+	logrusField.Method = "FindAggregate"
+	var resultStatus bool
+	var resultData interface{}
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
+
+	userservice := service.ReadService{}
+	result, err, collection := userservice.AggregateDocument(pipeline, collectionName)
+	if err != nil || !collection {
+		if !collection {
+			c.JSON(500, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
+		} else {
+			logging.Logger(cnst.Error, fmt.Sprint("FindAggregate(): error: ", err.Error()), logrusField)
+			c.JSON(500, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
+		}
+	} else {
+		// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
+		resultStatus = true
+		resultData = result
+
+	}
+
+	return resultStatus, resultData
+}
+
 func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService, mapCon ...map[string]interface{}) (bool, interface{}) {
 	logrusField := logrusFieldMongodbReadController
 	logrusField.Method = "FindDocumentObj"
