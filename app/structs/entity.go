@@ -26,6 +26,7 @@ type JsonResponse struct {
 	Message    string      `json:"message"`
 	Results    interface{} `json:"results"`
 	SaveStatus bool        `json:"saveStatus"`
+	Errors     []ErrorInfo `json:"errors,omitempty"`
 }
 
 // use swag json create body (create)
@@ -100,4 +101,8 @@ type LogrusField struct {
 	Application string `json:"application,omitempty"`
 	Module      string `json:"module,omitempty"`
 	Method      string `json:"method,omitempty"`
+}
+type ErrorInfo struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
