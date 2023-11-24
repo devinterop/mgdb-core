@@ -103,6 +103,6 @@ type LogrusField struct {
 	Method      string `json:"method,omitempty"`
 }
 type ErrorInfo struct {
-	Code    string `json:"code"`
+	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
