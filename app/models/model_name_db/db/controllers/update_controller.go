@@ -144,7 +144,9 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 		return resultStatus, resultData
 	} else if !(*jsonbody.Replacement) {
 		// set to false
-		jsondata["last_updated"] = time.Now()
+		if !*jsonbody.IsInsert {
+			jsondata["last_updated"] = time.Now()
+		}
 
 		//update
 		inc := bson.M{}
