@@ -99,17 +99,14 @@ func (u *DeleteController) DeleteDocument(c *gin.Context) (bool, interface{}) {
 		} else {
 
 			//arrayFilters
-			var arrayFilters []interface{}
+			arrayFilters := []interface{}{}
 			updateFilter, e := jsonbody.UpdateFilter.(map[string]interface{})
 			if e {
 			}
 			// fmt.Println("updateFilter : ",updateFilter)
-			obj := make(map[string]interface{})
 			for k, v := range updateFilter {
-				obj[k] = utils.ConvertOperators(v)
-				// arrayFilters = append(arrayFilters,  map[string]interface{}{k:utils.ConvertOperators(v)})
+				arrayFilters = append(arrayFilters, bson.M{k: utils.ConvertOperators(v)})
 			}
-			arrayFilters = append(arrayFilters, obj)
 			//fmt.Println("arrayFilters : ", arrayFilters)
 			logging.Logger(cnst.Debug, fmt.Sprint("arrayFilters: ", arrayFilters), logrusField)
 			// jsonString, _ := json.Marshal(arrayFilters)
