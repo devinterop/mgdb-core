@@ -103,7 +103,10 @@ func (u *UpdateController) UpdateDocument(c *gin.Context, mapGenerateID ...[]str
 func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID ...[]string) (bool, interface{}) {
 	logrusField := logrusFieldMongodbUpdateController
 	logrusField.Method = "updateOneDocument"
-
+	conditionInsert := "$set"
+	if *jsonbody.IsInsert {
+		conditionInsert = "$push"
+	}
 	var resultStatus bool
 	var resultData interface{}
 	condition, e := jsonbody.Condition.(map[string]interface{})
@@ -156,12 +159,12 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 		fmt.Println("inc : ", inc)
 		if len(inc) == 0 {
 			update = bson.M{
-				"$set": set,
+				conditionInsert: set,
 			}
 		} else {
 			update = bson.M{
-				"$inc": inc["inc"],
-				"$set": set,
+				"$inc":          inc["inc"],
+				conditionInsert: set,
 			}
 		}
 		//arrayFilters

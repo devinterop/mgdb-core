@@ -18,6 +18,7 @@ type JsonBody struct {
 	Replacement       *bool       `json:"replacement"`
 	UpdateFilter      interface{} `json:"updateFilter"`
 	FindOne           *bool       `json:"findone"`
+	IsInsert          *bool       `json:"isInsert"`
 	AggregatePipeline interface{} `json:"aggregatePipeline"`
 }
 
@@ -66,6 +67,7 @@ type JsonService struct {
 	Replacement       bool        `json:"replacement"`
 	UpdateFilter      interface{} `json:"updateFilter"`
 	FindOne           bool        `json:"findone"`
+	IsInsert          bool        `json:"isInsert"`
 	AggregatePipeline interface{} `json:"aggregatePipeline"`
 }
 
