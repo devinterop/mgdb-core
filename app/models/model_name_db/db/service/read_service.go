@@ -93,7 +93,6 @@ func (readservice ReadService) FindDocumentCount(filter bson.M, projection bson.
 	if !checkCollectionExist(collection) {
 		return nil, nil, false
 	}
-	// fmt.Println("limit=  = ", limit)
 	// result := []bson.M{}
 
 	cotp := options.Count()
@@ -104,11 +103,10 @@ func (readservice ReadService) FindDocumentCount(filter bson.M, projection bson.
 
 	no, err := Database.Collection(collection).CountDocuments(context.TODO(), filter, cotp)
 	if err != nil {
-		//fmt.Println("count search error : ", err.Error())
 		logging.Logger(cnst.Error, fmt.Sprint("error: ", err.Error()), logrusField)
 		return nil, err, false
 	}
-	// fmt.Println("read = = == = count = ", no)
+	// "read = = == = count = ", no)
 
 	return no, err, true
 }

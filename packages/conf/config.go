@@ -60,7 +60,6 @@ func InitConfigJson(file string) {
 		// logging.Logger(cnst.Fatal, "error on parsing json configuration file", logrusField)
 	} else {
 		utils.SetViperJson(viperJson)
-		//fmt.Println("InitConfigJson(): config: ", targetStruct)
 		//utils.ReadViperJsonToStruct(targetStruct)
 	}
 

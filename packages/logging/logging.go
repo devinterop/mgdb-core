@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"runtime"
 
 	"github.com/devinterop/mgdb-core/app/structs"
 	cnst "github.com/devinterop/mgdb-core/cnst"
@@ -162,6 +163,83 @@ func Logger(logLevel string, massage interface{}, fields structs.LogrusField, sa
 		if isServerLog && saveLog {
 			verifyLogger(logLevel, massage)
 		}
+	}
+}
+
+func LoggerV2(logLevel string, message interface{}, saveLogOption ...bool) {
+	pc, file, line, ok := runtime.Caller(1)
+	if !ok {
+		return
+	}
+	function := runtime.FuncForPC(pc)
+	functionName := function.Name()
+
+	// Extract the base name of the file
+	// fileNameWithExt := filepath.Base(file)
+	// // Remove the file extension
+	// fileName := strings.TrimSuffix(fileNameWithExt, filepath.Ext(fileNameWithExt))
+
+	// Get the struct name using reflection
+	// structType := reflect.TypeOf(structInstance)
+	// structName := ""
+	// if structType.Kind() == reflect.Ptr {
+	// 	structName = structType.Elem().Name()
+	// } else {
+	// 	structName = structType.Name()
+	// }
+
+	saveLog := true
+	if len(saveLogOption) > 0 {
+		saveLog = saveLogOption[0]
+	}
+	isServerLog := logconfig.OnServerLog
+	fields := structs.LogrusField{}
+	fields.Application = logconfig.AppName
+	// fields.Module = structName
+	fields.Method = functionName
+	fields.File = file
+	fields.Line = line
+	fieldsJSON, err := json.Marshal(fields)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"application": logconfig.AppName,
+			"module":      "LoggingServiceBackend",
+			"method":      "Logger",
+		}).Error("Error marshaling fields: ", err)
+		return
+	}
+
+	var jsonMap map[string]interface{}
+	if err := json.Unmarshal(fieldsJSON, &jsonMap); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"application": logconfig.AppName,
+			"module":      "LoggingServiceBackend",
+			"method":      "Logger",
+		}).Error("Error unmarshaling fieldsJSON: ", err)
+		jsonMap = map[string]interface{}{
+			"application": logconfig.AppName,
+		}
+	}
+
+	logEntry := logrus.WithFields(jsonMap)
+
+	switch logLevel {
+	case Debug:
+		logEntry.Debug(message)
+	case Info:
+		logEntry.Info(message)
+	case Warning:
+		logEntry.Warn(message)
+	case Error:
+		logEntry.Error(message)
+	case Fatal:
+		logEntry.Fatal(message)
+	default:
+		logEntry.Info(message) // Default to Info if unknown log level
+	}
+
+	if isServerLog && saveLog {
+		verifyLogger(logLevel, message)
 	}
 }
 

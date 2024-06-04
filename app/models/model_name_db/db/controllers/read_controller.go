@@ -67,7 +67,6 @@ func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService, mapCon
 		// panic(err)
 		logging.Logger(cnst.Fatal, err, logrusField)
 	}
-	//fmt.Println("byteArray=", string(byteArray))
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
@@ -88,7 +87,6 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 		// panic(err)
 		logging.Logger(cnst.Fatal, err, logrusField)
 	}
-	//fmt.Println("byteArray=", string(byteArray))
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
@@ -101,187 +99,51 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 func (auth *ReadController) FindDocument(c *gin.Context, jsonService structs.JsonService, count bool, mapCon ...map[string]interface{}) (bool, interface{}) {
 	logrusField := logrusFieldMongodbReadController
 	logrusField.Method = "FindDocument"
-	logging.Logger(cnst.Debug, fmt.Sprint("filter:FindDocument ", jsonService.Condition), logrusField)
+	logging.Logger(cnst.Debug, fmt.Sprintf("filter:FindDocument %v", jsonService.Condition), logrusField)
 
 	var resultStatus bool
 	var resultData interface{}
-	aggregate := false
-	// var con interface{}
-	// var primitiveType primitive.M
-	var jsonbody structs.JsonBody
 
-	bytes, er := json.Marshal(jsonService)
-	{
-		if er == nil {
-			err := json.Unmarshal(bytes, &jsonbody)
-			if err != nil {
-				logging.Logger(cnst.Fatal, err, logrusField)
-			}
-		}
+	jsonbody, err := parseJsonService(jsonService)
+	if err != nil {
+		logging.Logger(cnst.Fatal, err, logrusField)
+		return resultStatus, resultData
 	}
 
-	if jsonbody.AggregatePipeline != nil { //  Aggregate case
-		aggregate = true
-	} else {
-		//Check if data is empty
-		if jsonbody.Projection == nil { //  finddoc case
-			logging.Logger(cnst.Error, gin.H{"error": "'Projection': required field is not set"}, logrusField)
-			return resultStatus, resultData
-		}
+	aggregate := jsonbody.AggregatePipeline != nil
+	if !aggregate && jsonbody.Projection == nil {
+		logging.Logger(cnst.Error, gin.H{"error": "'Projection': required field is not set"}, logrusField)
+		return resultStatus, resultData
 	}
 
-	limit := jsonbody.Limit
-	skip := limit * (jsonbody.Offset - 1)
+	limit, skip := jsonbody.Limit, jsonbody.Limit*(jsonbody.Offset-1)
+	projection, date, aggregate := getProjectionAndDate(jsonbody.Projection, jsonbody.Timezone, aggregate)
+	condition := mergeConditions(jsonbody.Condition, mapCon...)
 
-	projection := bson.M{}
-	date := bson.M{}
-	fmt.Println("jsonbody.Projection = == ", jsonbody.Projection)
-	if jsonbody.Projection != nil {
-		projection, date, aggregate = projectionSet(jsonbody.Projection, jsonbody.Timezone)
-	}
-
-	condition := make(map[string]interface{})
-	if jsonbody.Condition != nil {
-		condition = jsonbody.Condition.(map[string]interface{})
-	}
-
-	if len(mapCon) > 0 {
-		v := []map[string]interface{}{
-			condition, mapCon[0],
-		}
-		condition = mergeMaps(v...)
-	}
-	fmt.Println("aggregate = == ", aggregate)
-	//find with aggregate
 	if aggregate {
-		pipeline := []bson.M{}
-		if reflect.TypeOf(jsonbody.AggregatePipeline).Kind() == reflect.Slice {
-			pipelinesInterface := jsonbody.AggregatePipeline.([]interface{})
-			for _, elem := range pipelinesInterface {
-				if doc, ok := elem.(map[string]interface{}); ok {
-					pipeline = append(pipeline, primitive.M(doc))
-				} else {
-					// Handle the case where the element is not a map[string]interface{}
-					fmt.Println("Skipping element:", elem)
-				}
-
-			}
-			// pipeline = pipelinesInterface
-		} else {
-			condition = bson.M{"$match": condition}
-			projection = bson.M{"$project": projection}
-			sort := bson.M{"$sort": jsonbody.Sort}
-			limits := bson.M{"$limit": limit}
-			skips := bson.M{"$skip": skip}
-			addFields := bson.M{"$addFields": date}
-
-			if len(date) != 0 && len(condition) != 0 {
-				pipeline = []bson.M{condition, projection, addFields, sort, skips, limits}
-			} else if len(date) == 0 && len(condition) != 0 {
-				pipeline = []bson.M{condition, projection, sort, skips, limits}
-			} else if len(date) != 0 && len(condition) == 0 {
-				pipeline = []bson.M{projection, addFields, sort, skips, limits}
-			} else {
-				pipeline = []bson.M{projection, sort, skips, limits}
-			}
-		}
-		//fmt.Println("Aggregate(): ", pipeline)
-		logging.Logger(cnst.Debug, fmt.Sprint("Aggregate: ", pipeline), logrusField)
-
-		userservice := service.ReadService{}
-		result, err, collection := userservice.AggregateDocument(pipeline, jsonbody.Collection)
-		if err != nil || !collection {
-			if !collection {
-				// 500
-				c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
-			} else {
-				// 500
-				logging.Logger(cnst.Error, fmt.Sprint("userservice.AggregateDocument(): error: ", err.Error()), logrusField)
-				c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
-			}
-		} else {
-			// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
-			resultStatus = true
-			resultData = result
-
-		}
-
-		//find document
+		return handleAggregate(c, jsonbody, condition, projection, date, limit, skip, logrusField)
 	} else {
-		filter := condition
-		if len(date) != 0 {
-			projection["last_updated"] = date
-		}
-		//fmt.Println("Find() filter: ", filter)
-		//fmt.Println("Find() projection: ", projection)
-		logging.Logger(cnst.Debug, fmt.Sprint("filter: ", filter), logrusField)
-		logging.Logger(cnst.Debug, fmt.Sprint("projection: ", projection), logrusField)
-
-		userservice := service.ReadService{}
-		if count == true {
-			result, _, collection := userservice.FindDocumentCount(filter, projection, jsonbody.Collection, jsonbody.Sort, int64(limit), int64(skip))
-			if collection == true {
-				return true, result
-			} else {
-				return false, nil
-			}
-		}
-		if *jsonbody.FindOne {
-			result, err, collection := userservice.FindOneDocument(filter, projection, jsonbody.Collection, jsonbody.Sort, int64(skip))
-			if err != nil || !collection {
-				if !collection {
-					// 500
-					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
-				} else {
-					// 500
-					logging.Logger(cnst.Error, fmt.Sprint("userservice.FindDocument(): error: ", err.Error()), logrusField)
-					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
-				}
-			} else {
-				// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
-				resultStatus = true
-				resultData = result
-
-			}
-		} else {
-			result, err, collection := userservice.FindDocument(filter, projection, jsonbody.Collection, jsonbody.Sort, int64(limit), int64(skip))
-			if err != nil || !collection {
-				if !collection {
-					// 500
-					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
-				} else {
-					// 500
-					logging.Logger(cnst.Error, fmt.Sprint("userservice.FindDocument(): error: ", err.Error()), logrusField)
-					c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
-				}
-			} else {
-				// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
-				resultStatus = true
-				resultData = result
-
-			}
-		}
+		return handleFind(c, jsonbody, count, condition, projection, date, limit, skip, logrusField)
 	}
-	return resultStatus, resultData
 }
 
-// projectionSet is for setup projection data
 func projectionSet(p interface{}, timezone string) (bson.M, bson.M, bool) {
 	projection := bson.M{}
-	date := bson.M{}
 	dateList := bson.M{}
 	aggregate := false
-	project, err := p.(map[string]interface{})
-	if err {
-	}
-	//set default 0 for document's id (MongoDB)
+
+	// Type assertion with proper error handling
+	project, _ := p.(map[string]interface{})
+
+	// Set default 0 for document's id (MongoDB)
 	if len(project) != 0 {
 		projection["_id"] = 0
 	}
-	//set projection data
+
+	// Set projection data
 	for key, result := range project {
 		if result == "date" {
-			date = bson.M{
+			date := bson.M{
 				"$dateToString": bson.M{
 					"date":     "$" + key,
 					"timezone": timezone,
@@ -293,13 +155,12 @@ func projectionSet(p interface{}, timezone string) (bson.M, bson.M, bool) {
 			projection[key] = result
 		}
 
-		if result == 0.0 {
-			if key == "_id" {
-				continue
-			}
+		// Check for aggregation requirement
+		if result == 0.0 && key != "_id" {
 			aggregate = true
 		}
 	}
+
 	return projection, dateList, aggregate
 }
 
@@ -311,4 +172,121 @@ func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return result
+}
+
+func parseJsonService(jsonService structs.JsonService) (structs.JsonBody, error) {
+	var jsonbody structs.JsonBody
+	bytes, err := json.Marshal(jsonService)
+	if err == nil {
+		err = json.Unmarshal(bytes, &jsonbody)
+	}
+	return jsonbody, err
+}
+
+func getProjectionAndDate(projection interface{}, timezone string, aggregate bool) (bson.M, bson.M, bool) {
+	proj := bson.M{}
+	date := bson.M{}
+	if projection != nil {
+		proj, date, aggregate = projectionSet(projection, timezone)
+	}
+	return proj, date, aggregate
+}
+
+func mergeConditions(condition interface{}, mapCon ...map[string]interface{}) map[string]interface{} {
+	cond := make(map[string]interface{})
+	if condition != nil {
+		cond = condition.(map[string]interface{})
+	}
+	if len(mapCon) > 0 {
+		cond = mergeMaps(append([]map[string]interface{}{cond}, mapCon...)...)
+	}
+	return cond
+}
+
+func handleAggregate(c *gin.Context, jsonbody structs.JsonBody, condition, projection, date bson.M, limit, skip int, logrusField structs.LogrusField) (bool, interface{}) {
+	pipeline := createPipeline(jsonbody, condition, projection, date, limit, skip)
+	logging.Logger(cnst.Debug, fmt.Sprintf("Aggregate: %v", pipeline), logrusField)
+
+	userservice := service.ReadService{}
+	result, err, collection := userservice.AggregateDocument(pipeline, jsonbody.Collection)
+	if err != nil || !collection {
+		handleError(c, err, collection, logrusField)
+		return false, nil
+	}
+
+	return true, result
+}
+
+func createPipeline(jsonbody structs.JsonBody, condition, projection, date bson.M, limit, skip int) []bson.M {
+	pipeline := []bson.M{}
+	if reflect.TypeOf(jsonbody.AggregatePipeline).Kind() == reflect.Slice {
+		for _, elem := range jsonbody.AggregatePipeline.([]interface{}) {
+			if doc, ok := elem.(map[string]interface{}); ok {
+				pipeline = append(pipeline, primitive.M(doc))
+			}
+		}
+	} else {
+		addFields := bson.M{"$addFields": date}
+		sort := bson.M{"$sort": jsonbody.Sort}
+		limits := bson.M{"$limit": limit}
+		skips := bson.M{"$skip": skip}
+		pipeline = buildPipeline(condition, projection, addFields, sort, skips, limits)
+	}
+	return pipeline
+}
+
+func buildPipeline(condition, projection, addFields, sort, skips, limits bson.M) []bson.M {
+	if len(addFields) != 0 && len(condition) != 0 {
+		return []bson.M{condition, projection, addFields, sort, skips, limits}
+	} else if len(addFields) == 0 && len(condition) != 0 {
+		return []bson.M{condition, projection, sort, skips, limits}
+	} else if len(addFields) != 0 && len(condition) == 0 {
+		return []bson.M{projection, addFields, sort, skips, limits}
+	} else {
+		return []bson.M{projection, sort, skips, limits}
+	}
+}
+
+func handleFind(c *gin.Context, jsonbody structs.JsonBody, count bool, condition, projection, date bson.M, limit, skip int, logrusField structs.LogrusField) (bool, interface{}) {
+	userservice := service.ReadService{}
+	if count {
+		return handleCount(c, jsonbody, userservice, condition, projection, limit, skip)
+	}
+	return handleDocumentFind(c, jsonbody, userservice, condition, projection, limit, skip, logrusField)
+}
+
+func handleCount(c *gin.Context, jsonbody structs.JsonBody, userservice service.ReadService, condition, projection bson.M, limit, skip int) (bool, interface{}) {
+	result, _, collection := userservice.FindDocumentCount(condition, projection, jsonbody.Collection, jsonbody.Sort, int64(limit), int64(skip))
+	if collection {
+		return true, result
+	}
+	return false, nil
+}
+
+func handleDocumentFind(c *gin.Context, jsonbody structs.JsonBody, userservice service.ReadService, condition, projection bson.M, limit, skip int, logrusField structs.LogrusField) (bool, interface{}) {
+	var result interface{}
+	var err error
+	var collection bool
+
+	if *jsonbody.FindOne {
+		result, err, collection = userservice.FindOneDocument(condition, projection, jsonbody.Collection, jsonbody.Sort, int64(skip))
+	} else {
+		result, err, collection = userservice.FindDocument(condition, projection, jsonbody.Collection, jsonbody.Sort, int64(limit), int64(skip))
+	}
+
+	if err != nil || !collection {
+		handleError(c, err, collection, logrusField)
+		return false, nil
+	}
+
+	return true, result
+}
+
+func handleError(c *gin.Context, err error, collection bool, logrusField structs.LogrusField) {
+	if !collection {
+		c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
+	} else {
+		logging.Logger(cnst.Error, fmt.Sprintf("Error: %v", err.Error()), logrusField)
+		c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
+	}
 }

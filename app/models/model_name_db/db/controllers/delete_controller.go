@@ -103,14 +103,11 @@ func (u *DeleteController) DeleteDocument(c *gin.Context) (bool, interface{}) {
 			updateFilter, e := jsonbody.UpdateFilter.(map[string]interface{})
 			if e {
 			}
-			// fmt.Println("updateFilter : ",updateFilter)
 			for k, v := range updateFilter {
 				arrayFilters = append(arrayFilters, bson.M{k: utils.ConvertOperators(v)})
 			}
-			//fmt.Println("arrayFilters : ", arrayFilters)
 			logging.Logger(cnst.Debug, fmt.Sprint("arrayFilters: ", arrayFilters), logrusField)
-			// jsonString, _ := json.Marshal(arrayFilters)
-			// fmt.Println(string(jsonString))
+
 			lastupdate := bson.M{
 				"last_updated": time.Now(),
 			}

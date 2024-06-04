@@ -38,7 +38,6 @@ func (u *UpdateController) UpdateDocumentObj(jsonPost structs.JsonService, mapGe
 		// panic(err)
 		logging.Logger(cnst.Fatal, err, logrusField)
 	}
-	//fmt.Println("update =  = =", string(byteArray))
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
@@ -92,8 +91,6 @@ func (u *UpdateController) UpdateDocument(c *gin.Context, mapGenerateID ...[]str
 			resultStatus, resultData = updateOneDocument(jsonbody, c)
 		}
 	} else {
-		// set to true
-		// fmt.Println("updateMultipleDocument = = ")
 		resultStatus, resultData = updateMultipleDocument(jsonbody, c)
 	}
 
@@ -158,7 +155,6 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 				set[k] = v
 			}
 		}
-		fmt.Println("inc : ", inc)
 		if len(inc) == 0 {
 			update = bson.M{
 				conditionInsert: set,
@@ -174,11 +170,9 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 		updateFilter, e := jsonbody.UpdateFilter.(map[string]interface{})
 		if e {
 		}
-		// fmt.Println("updateFilter : ",updateFilter)
 		for k, v := range updateFilter {
 			arrayFilters = append(arrayFilters, bson.M{k: utils.ConvertOperators(v)})
 		}
-		//fmt.Println("arrayFilters : ", arrayFilters)
 		logging.Logger(cnst.Debug, fmt.Sprint("arrayFilters: ", arrayFilters), logrusField)
 
 		id, err, coll := userservice.FindOneAndUpdate(condition, arrayFilters, update, jsonbody.Collection)
@@ -201,7 +195,6 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 		// set to true
 		jsondata["id"] = condition["id"]
 		jsondata["last_updated"] = time.Now()
-		//fmt.Println("FindOneAndReplace  ", jsondata)
 		logging.Logger(cnst.Debug, fmt.Sprint("jsonbody: ", jsondata), logrusField)
 		update = jsondata
 

@@ -81,7 +81,6 @@ func (s ServiceModel) SendApiWithStatus(data []byte, url string, requestType str
 	// log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(jsonStr))
 	if err != nil {
-		fmt.Println("err ==", err.Error())
 		panic(err)
 	}
 	req.Header.Set("X-Custom-Header", "myvalue")
@@ -262,7 +261,6 @@ func (s ServiceModel) SendApiBearerHeader(data []byte, url string, requestType s
 	// log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(jsonStr))
 	if err != nil {
-		fmt.Println("1")
 		panic(err)
 	}
 	req.Header.Set("X-Custom-Header", "myvalue")
@@ -270,7 +268,6 @@ func (s ServiceModel) SendApiBearerHeader(data []byte, url string, requestType s
 	// headers := make(map[string]interface{})
 	// // apiKey := "a1LDdM6OvOxNsvqgCQCqFP7QHZDFvu5e"
 	// apiKey := utils.ViperEnvVariable("IMED-BRD-APIKEY")
-	// // fmt.Println("apiKey :: ", apiKey)
 	// headers["APIKEY"] = apiKey
 	if len(headers) != 0 {
 		for k, v := range headers {
@@ -296,7 +293,6 @@ func (s ServiceModel) SendApiBearerHeader(data []byte, url string, requestType s
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// fmt.Println("3")
 		panic(err)
 	}
 	// log.Println("response Body:", string(body))
@@ -315,7 +311,6 @@ func (s ServiceModel) SendApiBasicAuthen(data []byte, url string, requestType st
 	//log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
 	if err != nil {
-		fmt.Println("1")
 		panic(err)
 	}
 	//userName := "apikey"
@@ -397,7 +392,6 @@ func (s ServiceModel) SendApiKey(data []byte, url string, requestType string, he
 	//log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
 	if err != nil {
-		//fmt.Println("1")
 		panic(err)
 	}
 	//userName := "apikey"
@@ -432,7 +426,6 @@ func (s ServiceModel) SendApiKey(data []byte, url string, requestType string, he
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// fmt.Println("3")
 		panic(err)
 	}
 	//log.Println("response Body:", string(body))

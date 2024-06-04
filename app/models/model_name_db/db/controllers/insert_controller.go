@@ -38,7 +38,6 @@ func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService, 
 		// panic(err)
 		logging.Logger(cnst.Fatal, err, logrusField)
 	}
-	//fmt.Println("byteArray InsertDocumentObj= =", string(byteArray))
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
@@ -197,7 +196,6 @@ func insertWithCondition(jsonbody structs.JsonBody, c *gin.Context) (bool, inter
 		if reflect.TypeOf(result).Kind() == reflect.Slice {
 			//check jsondata contain document in array
 			for _, r := range jsondata[key].([]interface{}) {
-				//fmt.Println(r)
 				if reflect.TypeOf(r).Kind() == reflect.Map {
 					if _, ok := r.(map[string]interface{})["id"]; !ok {
 						newId = utils.GenerateID("Ar")
@@ -217,8 +215,6 @@ func insertWithCondition(jsonbody structs.JsonBody, c *gin.Context) (bool, inter
 	}
 
 	update := bson.M{}
-	// fmt.Println(time.Now().Zone())
-	// fmt.Println(time.Now())
 
 	// check if item can duplicate in array
 	if jsonbody.Duplicate == nil {
@@ -245,13 +241,9 @@ func insertWithCondition(jsonbody structs.JsonBody, c *gin.Context) (bool, inter
 		}
 	}
 
-	// fmt.Println(condition)
-	// fmt.Println(update)
 	userservice := service.CreateService{}
 	id, err, col := userservice.UpdateDocuments(condition, update, jsonbody.Collection)
-	// fmt.Println("UpdateDocuments err :: ", err)
-	// fmt.Println("col :: ", col)
-	// fmt.Println("id :: ", id)
+
 	if err != nil || !col {
 		if !col {
 			// 500

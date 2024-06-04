@@ -57,7 +57,6 @@ func ConvertStructToJson(s interface{}) []byte {
 	f := reflect.Indirect(r).Elem()
 	j, err := json.Marshal(f.Interface())
 	if err != nil {
-		//fmt.Println("error")
 		logging.Logger(cnst.Fatal, err, logrusField)
 	}
 	//logging.Logger(cnst.Debug, fmt.Sprintf("%+v => %s", s, string(j)), logrusField)
@@ -183,15 +182,11 @@ func RandomCode(length int) string {
 // GenerateID function is for Generate Document id
 func GenerateID(prefix string) string {
 	objectID := oid.NewOID()
-	// fmt.Println("object id:", objectID.String())
-	// fmt.Println("object timestamp", objectID.Timestamp())
 	return prefix + objectID.String()
 }
 
 func GenerateUUID() string {
 	objectID := uuid.New()
-	// fmt.Println("object id:", objectID.String())
-	// fmt.Println("object timestamp", objectID.Timestamp())
 	return objectID.String()
 }
 
@@ -241,7 +236,6 @@ func ConvertOperators(data interface{}) interface{} {
 					tmpData[MapOperators(k.String())] = d.MapIndex(k).Interface()
 				}
 			} else {
-				fmt.Println("object id:", MapOperators(k.String()))
 				tmpData[MapOperators(k.String())] = nil
 			}
 		}
@@ -604,8 +598,7 @@ func CheckJsonData(jsondata map[string]interface{}, mapGenerateID ...[]string) m
 				// 	if reflect.TypeOf(result).Kind() == reflect.Slice {
 				// 		for _, r := range subData[key].([]interface{}) {
 				// 			if reflect.TypeOf(r).Kind() == reflect.Map {
-				// 				if _, ok := r.(map[string]interface{})["id"]; !ok {
-				// 					// fmt.Println("already have field id----------------------------------",r.(map[string]interface{})["id"])
+				// 				if _, ok := r.(map[string]interface{})["id"]; !ok {------------------------",r.(map[string]interface{})["id"])
 				// 					r.(map[string]interface{})["id"] = GenerateID("Ar")
 				// 				}
 				// 			}
@@ -817,7 +810,7 @@ func ConvertStringToInt(input string) int {
 	logrusField.Method = "ConvertStringToInt"
 	out, err := strconv.Atoi(input)
 	if err != nil {
-		//fmt.Println(err.Error())
+
 		logging.Logger(cnst.Fatal, err, logrusField)
 		return -1
 	}
@@ -888,8 +881,6 @@ func NewBoolean(state bool) *bool {
 }
 
 func FindNextDate(then time.Time, monday bool, tuesday bool, wednesday bool, thursday bool, friday bool, saturday bool, sunday bool) time.Time {
-	// fmt.Println("FindNextDate2 :", then)
-
 	for {
 		if int(then.Weekday()) == 0 {
 			if sunday == true {
@@ -1114,31 +1105,31 @@ func FormatSortDate(intput string) time.Time {
 
 	yearInt, err := strconv.Atoi(yearstr) //
 	if err != nil {
-		//fmt.Println(err.Error())
+
 		logging.Logger(cnst.Fatal, err, logrusField)
 		return time.Time{}
 	}
 	monthInt, err := strconv.Atoi(monthstr) //
 	if err != nil {
-		//fmt.Println(err.Error())
+
 		logging.Logger(cnst.Fatal, err, logrusField)
 		return time.Time{}
 	}
 	dayInt, err := strconv.Atoi(daystr) //
 	if err != nil {
-		//fmt.Println(err.Error())
+
 		logging.Logger(cnst.Fatal, err, logrusField)
 		return time.Time{}
 	}
 	hrInt, err := strconv.Atoi(hrstr) //
 	if err != nil {
-		//fmt.Println(err.Error())
+
 		logging.Logger(cnst.Fatal, err, logrusField)
 		return time.Time{}
 	}
 	minInt, err := strconv.Atoi(minstr) //
 	if err != nil {
-		//fmt.Println(err.Error())
+
 		logging.Logger(cnst.Fatal, err, logrusField)
 		return time.Time{}
 	}
@@ -1172,35 +1163,35 @@ func GetDateFromString(intput string) (year int, month int, day int, hour int, m
 
 				year, err := strconv.Atoi(yearStr)
 				if err != nil {
-					//fmt.Println(err.Error())
+
 					logging.Logger(cnst.Fatal, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				month, err := strconv.Atoi(monthStr)
 				if err != nil {
-					//fmt.Println(err.Error())
+
 					logging.Logger(cnst.Fatal, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				day, err := strconv.Atoi(dayStr)
 				if err != nil {
-					//fmt.Println(err.Error())
+
 					logging.Logger(cnst.Fatal, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				hour, err := strconv.Atoi(hourstr)
 				if err != nil {
-					//fmt.Println(err.Error())
+
 					logging.Logger(cnst.Fatal, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				min, err := strconv.Atoi(minstr)
 				if err != nil {
-					//fmt.Println(err.Error())
+
 					logging.Logger(cnst.Fatal, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
@@ -1235,11 +1226,8 @@ func SpilitOnlyYMD(input string) (day string, month string, year string) {
 			if len(dateSplit) > 0 {
 				dateSplit := strings.Split(dateSplit[0], "-")
 				month = dateSplit[0]
-				//fmt.Println(dateSplit[0])
 				day = dateSplit[1]
-				//fmt.Println(dateSplit[1])
 				year = dateSplit[2]
-				//fmt.Println(dateSplit[2])
 			}
 		}
 	}

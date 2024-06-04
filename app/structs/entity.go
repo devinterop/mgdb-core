@@ -103,6 +103,8 @@ type LogrusField struct {
 	Application string `json:"application,omitempty"`
 	Module      string `json:"module,omitempty"`
 	Method      string `json:"method,omitempty"`
+	File        string `json:"file,omitempty"`
+	Line        int    `json:"line,omitempty"`
 }
 type ErrorInfo struct {
 	Code    int    `json:"code"`

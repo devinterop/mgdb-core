@@ -98,7 +98,6 @@ func (j JwtCtrl) ExtractClaims(tokenStr string) (jwt.MapClaims, bool) {
 		// check token signing method etc
 		return hmacSecret, nil
 	})
-	//fmt.Println("Parse ] ]", err)
 	if err != nil {
 		logging.Logger(cnst.Fatal, fmt.Sprint("JWT Parse error: ", err), logrusField)
 		return nil, false
