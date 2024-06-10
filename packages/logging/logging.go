@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/devinterop/mgdb-core/app/structs"
 	cnst "github.com/devinterop/mgdb-core/cnst"
@@ -93,7 +94,6 @@ func sendToServerLog(data structs.JsonLogBody) {
 	body, _ := ioutil.ReadAll(resp.Body)
 	var result structs.JsonLogResponseEror
 	json.Unmarshal([]byte(body), &result)
-	//fmt.Printf("%+v\n", result)
 	logrus.WithFields(logrus.Fields{
 		"application": logconfig.AppName,
 		"module":      "LoggingServiceBackend",
@@ -174,19 +174,15 @@ func LoggerV2(logLevel string, message interface{}, saveLogOption ...bool) {
 	function := runtime.FuncForPC(pc)
 	functionName := function.Name()
 
-	// Extract the base name of the file
-	// fileNameWithExt := filepath.Base(file)
-	// // Remove the file extension
-	// fileName := strings.TrimSuffix(fileNameWithExt, filepath.Ext(fileNameWithExt))
-
-	// Get the struct name using reflection
-	// structType := reflect.TypeOf(structInstance)
-	// structName := ""
-	// if structType.Kind() == reflect.Ptr {
-	// 	structName = structType.Elem().Name()
-	// } else {
-	// 	structName = structType.Name()
-	// }
+	parts := strings.Split(functionName, ".")
+	var packageName, actualFunctionName string
+	if len(parts) > 1 {
+		packageName = strings.Join(parts[:len(parts)-1], ".")
+		actualFunctionName = parts[len(parts)-1]
+	} else {
+		packageName = ""
+		actualFunctionName = functionName
+	}
 
 	saveLog := true
 	if len(saveLogOption) > 0 {
@@ -195,8 +191,8 @@ func LoggerV2(logLevel string, message interface{}, saveLogOption ...bool) {
 	isServerLog := logconfig.OnServerLog
 	fields := structs.LogrusField{}
 	fields.Application = logconfig.AppName
-	// fields.Module = structName
-	fields.Method = functionName
+	fields.Module = packageName
+	fields.Method = actualFunctionName
 	fields.File = file
 	fields.Line = line
 	fieldsJSON, err := json.Marshal(fields)
