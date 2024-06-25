@@ -114,6 +114,7 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 			id := utils.GenerateID("Dc")
 			doc.(map[string]interface{})["id"] = id
 			doc.(map[string]interface{})["last_updated"] = time.Now()
+			doc.(map[string]interface{})["createDateTime"] = time.Now()
 			for _, result := range doc.(map[string]interface{}) {
 				// check jsondata contain document in array
 				if reflect.TypeOf(result).Kind() == reflect.Slice {
@@ -146,6 +147,7 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 		//Set document id with prefix
 		jsondata["id"] = utils.GenerateID("Dc")
 		jsondata["last_updated"] = time.Now()
+		jsondata["createDateTime"] = time.Now()
 		if len(mapGenerateID) > 0 { // มีการ ระบุ field ที่ต้องการ gen id  , หากไม่ระบุมา จะ genให้แค่ id ชั้นนอก field เดียว
 
 			jsondata = utils.CheckJsonData(jsondata, mapGenerateID[0])
