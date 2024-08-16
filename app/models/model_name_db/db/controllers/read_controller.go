@@ -78,7 +78,7 @@ func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService, mapCon
 }
 
 // / count = true ; only count document non get data
-func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, count bool) (bool, interface{}) {
+func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, count bool, mapCon ...map[string]interface{}) (bool, interface{}) {
 	logrusField := logrusFieldMongodbReadController
 	logrusField.Method = "FindDocumentObjCount"
 
@@ -87,11 +87,15 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 		// panic(err)
 		logging.Logger(cnst.Fatal, err, logrusField)
 	}
+	//fmt.Println("byteArray=", string(byteArray))
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
 	//os.Setenv("collection", jsonPost.Collection)
+	if len(mapCon) > 0 {
+		return auth.FindDocument(c, jsonPost, false, mapCon[0])
+	}
 	return auth.FindDocument(c, jsonPost, count)
 }
 
