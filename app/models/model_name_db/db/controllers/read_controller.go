@@ -94,7 +94,7 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
 	//os.Setenv("collection", jsonPost.Collection)
 	if len(mapCon) > 0 {
-		return auth.FindDocument(c, jsonPost, false, mapCon[0])
+		return auth.FindDocument(c, jsonPost, count, mapCon[0])
 	}
 	return auth.FindDocument(c, jsonPost, count)
 }
