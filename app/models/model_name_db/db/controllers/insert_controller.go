@@ -153,6 +153,10 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 			jsondata = utils.CheckJsonData(jsondata, mapGenerateID[0])
 		}
 
+		if len(jsonbody.DateKey) > 0 {
+			jsondata = utils.StringtoTimetime(jsondata, jsonbody.DateKey)
+		}
+
 		id, err, col := userservice.InsertOneDocument(jsondata, jsonbody.Collection)
 		if err != nil || !col {
 			if !col {

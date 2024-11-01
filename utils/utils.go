@@ -1245,3 +1245,53 @@ func SpilitCodeForLastIndex(input string) string {
 	}
 	return lastIndex
 }
+
+func StringtoTimetime(jsondata map[string]interface{}, keys []string) map[string]interface{} {
+	for _, keyPath := range keys {
+		keyParts := strings.Split(keyPath, ".")
+		convertTime(jsondata, keyParts)
+	}
+	return jsondata
+}
+
+func convertTime(data map[string]interface{}, keyParts []string) {
+	if len(keyParts) == 0 {
+		return
+	}
+
+	key := keyParts[0]
+
+	if len(keyParts) == 1 {
+		// We're at the final part of the path
+		if val, ok := data[key]; ok {
+			// Convert the value to time.Time if it is a string
+			if strVal, isString := val.(string); isString {
+				parsedTime, err := time.Parse(time.RFC3339, strVal)
+				fmt.Println("1111", parsedTime)
+				if err == nil {
+					data[key] = parsedTime
+				} else {
+					fmt.Printf("Error parsing time for key %s: %v\n", key, err)
+				}
+			}
+		}
+		return
+	}
+
+	// If not at the end, keep traversing
+	next, exists := data[key]
+	if !exists {
+		return
+	}
+
+	switch next := next.(type) {
+	case map[string]interface{}:
+		convertTime(next, keyParts[1:])
+	case []interface{}:
+		for _, item := range next {
+			if itemMap, isMap := item.(map[string]interface{}); isMap {
+				convertTime(itemMap, keyParts[1:])
+			}
+		}
+	}
+}

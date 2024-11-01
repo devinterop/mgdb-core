@@ -114,24 +114,11 @@ func updateOneDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 	if len(mapGenerateID) > 0 { // มีการ ระบุ field ที่ต้องการ gen id  , หากไม่ระบุมา จะ genให้แค่ id ชั้นนอก field เดียว
 		jsondata = utils.CheckJsonData(jsondata, mapGenerateID[0])
 	}
-	// for key, result := range jsondata {    //old
-	// 	//check jsondata contain array
-	// 	if reflect.TypeOf(result).Kind() == reflect.Slice {
-	// 		//check jsondata contain document in array
-	// 		for _, r := range jsondata[key].([]interface{}) {
-	// 			if reflect.TypeOf(r).Kind() == reflect.Map {
-	// 				if _, ok := r.(map[string]interface{})["id"]; !ok {
-	// 					newId := utils.GenerateID("Ar")
-	// 					r.(map[string]interface{})["id"] = newId
-	// 				}
-	// 			}
-	// 		}
-	// 	} else if reflect.TypeOf(result).Kind() == reflect.Map {
-	// 		// if _, ok := result.(map[string]interface{})["id"]; !ok {
-	// 		// 	result.(map[string]interface{})["id"] = utils.GenerateID("Ar")
-	// 		// }
-	// 	}
-	// }   //old
+
+	if len(jsonbody.DateKey) > 0 {
+		jsondata = utils.StringtoTimetime(jsondata, jsonbody.DateKey)
+	}
+
 	update := bson.M{}
 
 	userservice := service.UpdateService{}

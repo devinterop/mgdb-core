@@ -20,6 +20,7 @@ type JsonBody struct {
 	FindOne           *bool       `json:"findone"`
 	IsInsert          *bool       `json:"isInsert"`
 	AggregatePipeline interface{} `json:"aggregatePipeline"`
+	DateKey           []string    `json:"dateKey"`
 }
 
 type JsonResponse struct {
@@ -69,6 +70,7 @@ type JsonService struct {
 	FindOne           bool        `json:"findone"`
 	IsInsert          bool        `json:"isInsert"`
 	AggregatePipeline interface{} `json:"aggregatePipeline"`
+	DateKey           []string    `json:"dateKey"`
 }
 
 //Jsonbody struct is to handle Json body request
