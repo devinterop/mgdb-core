@@ -51,7 +51,7 @@ func (deleteservice DeleteService) FindOneAndDelete(filter interface{}, coll str
 	doc := bson.M{}
 	decodeErr := result.Decode(&doc)
 	//log.Printf("result : %v", decodeErr)
-	logging.Logger(cnst.Debug, fmt.Sprint("result: ", decodeErr), logrusField)
+	logging.Logger(cnst.Debug, fmt.Sprint("result:  ", decodeErr), logrusField)
 
 	return id, decodeErr, true
 }
