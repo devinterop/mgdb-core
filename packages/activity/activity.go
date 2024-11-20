@@ -15,15 +15,15 @@ import (
 
 type ActivityServiceBackend struct{}
 
-var activitylogconfig structs.ActivityLogConfiguration
+var Activitylogconfig structs.ActivityLogConfiguration
 
 func InitActivityLog(activitylogconfig structs.ActivityLogConfiguration) {
-	activitylogconfig = activitylogconfig
+	Activitylogconfig = activitylogconfig
 }
 
 func sendToActivityLog(data ActivityInfo) {
-	server := activitylogconfig.Server
-	servicePath := activitylogconfig.ServicePath
+	server := Activitylogconfig.Server
+	servicePath := Activitylogconfig.ServicePath
 	url := server + servicePath
 
 	byteData, err := json.Marshal(data)
@@ -49,7 +49,7 @@ func sendToActivityLog(data ActivityInfo) {
 	var result structs.JsonLogResponseEror
 	json.Unmarshal([]byte(body), &result)
 	logrus.WithFields(logrus.Fields{
-		"application": activitylogconfig.AppName,
+		"application": Activitylogconfig.AppName,
 		"module":      "ActivityServiceBackend",
 		"method":      "sendToActivityLog",
 	}).Debug(fmt.Sprintf("result: %s, %s", resp.Status, body))
@@ -59,7 +59,7 @@ func ActivityLog(data ActivityLogInfo) {
 
 	var logObj ActivityInfo
 	logObj.PersonalId = data.PersonalId
-	logObj.ApplicationId = activitylogconfig.AppId
+	logObj.ApplicationId = Activitylogconfig.AppId
 	logObj.ApplicationType = data.ApplicationType
 	logObj.Activities = data.Activities
 	logObj.SubActivities = data.SubActivities
