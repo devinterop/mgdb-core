@@ -10,4 +10,5 @@ const (
 	AppKey        = "AppKey"
 	ServerAuthen  = "ServerAuthen"
 	SecretKey     = "SECRET_KEY"
+	ActivityLog   = "ActivityLog"
 )
