@@ -101,6 +101,13 @@ type LogConfiguration struct {
 	OnServerLog bool   `json:"onServerLog,omitempty"`
 }
 
+type ActivityLogConfiguration struct {
+	Server      string `json:"server,omitempty"`
+	ServicePath string `json:"servicePath,omitempty"`
+	AppId       string `json:"appId,omitempty"`
+	AppName     string `json:"appName,omitempty"`
+}
+
 type LogrusField struct {
 	Application string `json:"application,omitempty"`
 	Module      string `json:"module,omitempty"`
