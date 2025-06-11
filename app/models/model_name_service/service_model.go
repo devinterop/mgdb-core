@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -431,4 +432,70 @@ func (s ServiceModel) SendApiKey(data []byte, url string, requestType string, he
 	//log.Println("response Body:", string(body))
 
 	return string(body), string(resp.Status)
+}
+
+func (u ServiceModel) SendApiUploadFile(urlPath string, requestType string, headers map[string]interface{}, parentId string, filename string, fileHeader *multipart.FileHeader) (string, string, string) {
+	logrusField := logrusFieldFusionauth
+	logrusField.Method = "SendApiUploadFile"
+	// Create a buffer and a multipart writer
+	var requestBody bytes.Buffer
+	multipartWriter := multipart.NewWriter(&requestBody)
+	multipartWriter.WriteField("refId", parentId)
+	multipartWriter.WriteField("filename", filename)
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", "500", err.Error()
+	}
+
+	// Add the file to the form
+	formFileWriter, err := multipartWriter.CreateFormFile("file", fileHeader.Filename)
+	if err != nil {
+		return "", "500", err.Error()
+	}
+	if _, err := io.Copy(formFileWriter, file); err != nil {
+		return "", "500", err.Error()
+	}
+
+	if err := multipartWriter.Close(); err != nil {
+		return "", "500", err.Error()
+	}
+
+	// url := "http://phr.mch.mfu.ac.th/servicedev/rest/rsservice/dataOperatePost"
+	log.Println(requestType, "URL:>", urlPath)
+	req, err := http.NewRequest(requestType, urlPath, &requestBody)
+	if err != nil {
+		// panic(err)
+		logging.Logger(cnst.Info, fmt.Sprint("http.NewRequest err : ", err.Error()), logrusField)
+		return "", "500", err.Error()
+	}
+	req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", multipartWriter.FormDataContentType())
+	if len(headers) != 0 {
+		for k, v := range headers {
+			req.Header.Add(k, fmt.Sprint(v))
+		}
+	}
+
+	// req.PostForm = url.Values{}
+	// req.PostForm.Set("refId", parentId)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logging.Logger(cnst.Info, fmt.Sprint("client.Do err : "+err.Error()), logrusField)
+		return "", "500", err.Error()
+	}
+	defer resp.Body.Close()
+
+	logging.Logger(cnst.Info, fmt.Sprint("Response Status:", resp.StatusCode), logrusField)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logging.Logger(cnst.Info, fmt.Sprint("ioutil.ReadAll err : "+err.Error()), logrusField)
+		return "", "500", err.Error()
+	}
+	// log.Println("response Body:", string(body))
+
+	return string(body), string(resp.Status), ""
 }
