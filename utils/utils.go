@@ -587,44 +587,86 @@ func MapOperators(str string) string {
 	return str
 }
 
+// func CheckJsonData(jsondata map[string]interface{}, mapGenerateID ...[]string) map[string]interface{} {
+// 	for key, result := range jsondata {
+// 		//check jsondata contain utils in array
+// 		if reflect.TypeOf(result).Kind() == reflect.Slice {
+// 			for _, r := range jsondata[key].([]interface{}) {
+// 				//----------------------------
+// 				// subData := r.(map[string]interface{})
+// 				// for key, result := range subData {
+// 				// 	if reflect.TypeOf(result).Kind() == reflect.Slice {
+// 				// 		for _, r := range subData[key].([]interface{}) {
+// 				// 			if reflect.TypeOf(r).Kind() == reflect.Map {
+// 				// 				if _, ok := r.(map[string]interface{})["id"]; !ok {------------------------",r.(map[string]interface{})["id"])
+// 				// 					r.(map[string]interface{})["id"] = GenerateID("Ar")
+// 				// 				}
+// 				// 			}
+// 				// 		}
+// 				// 	}
+// 				// }
+// 				//----------------------------
+// 				if reflect.TypeOf(r).Kind() == reflect.Map {
+// 					subData := r.(map[string]interface{})
+
+// 					for _, result := range subData {
+// 						if reflect.TypeOf(result).Kind() == reflect.Slice {
+// 							if len(mapGenerateID) > 0 {
+// 								CheckJsonData(subData, mapGenerateID[0])
+// 							} else {
+// 								CheckJsonData(subData)
+// 							}
+// 						}
+// 					}
+
+// 					if key != "image" && ContainInSlice(mapGenerateID[0], key) == true {
+// 						if _, ok := r.(map[string]interface{})["id"]; !ok {
+// 							r.(map[string]interface{})["id"] = GenerateID("Ar")
+// 						}
+// 					}
+
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	return jsondata
+// }
+
 func CheckJsonData(jsondata map[string]interface{}, mapGenerateID ...[]string) map[string]interface{} {
+	// 1. ป้องกัน Index out of range: ดึง config ออกมาเก็บใส่ตัวแปรไว้ก่อน
+	var targetKeys []string
+	if len(mapGenerateID) > 0 {
+		targetKeys = mapGenerateID[0]
+	}
+
 	for key, result := range jsondata {
-		//check jsondata contain utils in array
-		if reflect.TypeOf(result).Kind() == reflect.Slice {
-			for _, r := range jsondata[key].([]interface{}) {
-				//----------------------------
-				// subData := r.(map[string]interface{})
-				// for key, result := range subData {
-				// 	if reflect.TypeOf(result).Kind() == reflect.Slice {
-				// 		for _, r := range subData[key].([]interface{}) {
-				// 			if reflect.TypeOf(r).Kind() == reflect.Map {
-				// 				if _, ok := r.(map[string]interface{})["id"]; !ok {------------------------",r.(map[string]interface{})["id"])
-				// 					r.(map[string]interface{})["id"] = GenerateID("Ar")
-				// 				}
-				// 			}
-				// 		}
-				// 	}
-				// }
-				//----------------------------
-				if reflect.TypeOf(r).Kind() == reflect.Map {
-					subData := r.(map[string]interface{})
+		// 2. ป้องกัน Panic จากค่า Null: เช็ค nil ก่อนทำอย่างอื่นเสมอ
+		if result == nil {
+			continue
+		}
 
-					for _, result := range subData {
-						if reflect.TypeOf(result).Kind() == reflect.Slice {
-							if len(mapGenerateID) > 0 {
-								CheckJsonData(subData, mapGenerateID[0])
-							} else {
-								CheckJsonData(subData)
-							}
-						}
+		// ใช้ Type Assertion เช็คว่าเป็น Slice หรือไม่ (ปลอดภัยและเร็วกว่า reflect)
+		if sliceData, ok := result.([]interface{}); ok {
+
+			for _, r := range sliceData {
+				// เช็คว่าข้างในเป็น Map (Object) หรือไม่
+				if subData, ok := r.(map[string]interface{}); ok {
+
+					// Recursion: ส่งต่อ targetKeys ไปด้วยเสมอ เพื่อไม่ให้ mapGenerateID หาย
+					if len(targetKeys) > 0 {
+						CheckJsonData(subData, targetKeys)
+					} else {
+						CheckJsonData(subData)
 					}
 
-					if key != "image" && ContainInSlice(mapGenerateID[0], key) == true {
-						if _, ok := r.(map[string]interface{})["id"]; !ok {
-							r.(map[string]interface{})["id"] = GenerateID("Ar")
+					// Logic เดิม: Gen ID ถ้า Key ตรงกับที่กำหนด
+					// ใช้ targetKeys ที่เตรียมไว้ แทนการเรียก mapGenerateID[0] ตรงๆ
+					if key != "image" && len(targetKeys) > 0 && ContainInSlice(targetKeys, key) {
+						if _, hasID := subData["id"]; !hasID {
+							subData["id"] = GenerateID("Ar")
 						}
 					}
-
 				}
 			}
 		}
