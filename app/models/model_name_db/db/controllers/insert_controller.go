@@ -3,21 +3,18 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
-
-	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
-
-	"fmt"
 	"reflect"
 	"time"
 
+	cnst "github.com/devinterop/mgdb-core/cnst"
+	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
 	"github.com/devinterop/mgdb-core/app/structs"
 	"github.com/devinterop/mgdb-core/packages/logging"
 	"github.com/devinterop/mgdb-core/utils"
-
-	cnst "github.com/devinterop/mgdb-core/cnst"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -41,7 +38,7 @@ func (create *CreateController) InsertDocumentObj(jsonPost structs.JsonService, 
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(byteArray))
 	if len(mapGenerateID) > 0 {
 		return create.InsertDocument(c, mapGenerateID[0])
 	}
@@ -111,16 +108,21 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 		}
 
 		for _, doc := range jsondata {
-			id := utils.GenerateID("Dc")
-			doc.(map[string]interface{})["id"] = id
-			doc.(map[string]interface{})["last_updated"] = time.Now()
-			doc.(map[string]interface{})["createDateTime"] = time.Now()
-			for _, result := range doc.(map[string]interface{}) {
+			docMap, ok := doc.(map[string]interface{})
+			if !ok || docMap == nil {
+				continue
+			}
+			docMap["id"] = utils.GenerateID("Dc")
+			docMap["last_updated"] = time.Now()
+			docMap["createDateTime"] = time.Now()
+			for _, result := range docMap {
 				// check jsondata contain document in array
-				if reflect.TypeOf(result).Kind() == reflect.Slice {
+				if result != nil && reflect.TypeOf(result).Kind() == reflect.Slice {
 					for _, r := range result.([]interface{}) {
-						if reflect.TypeOf(r).Kind() == reflect.Map {
-							r.(map[string]interface{})["id"] = utils.GenerateID("Ar")
+						if r != nil && reflect.TypeOf(r).Kind() == reflect.Map {
+							if _, exists := r.(map[string]interface{})["id"]; !exists {
+								r.(map[string]interface{})["id"] = utils.GenerateID("Ar")
+							}
 						}
 					}
 				}
@@ -148,9 +150,20 @@ func insertNewDocument(jsonbody structs.JsonBody, c *gin.Context, mapGenerateID 
 		jsondata["id"] = utils.GenerateID("Dc")
 		jsondata["last_updated"] = time.Now()
 		jsondata["createDateTime"] = time.Now()
-		if len(mapGenerateID) > 0 { // มีการ ระบุ field ที่ต้องการ gen id  , หากไม่ระบุมา จะ genให้แค่ id ชั้นนอก field เดียว
-
+		if len(mapGenerateID) > 0 { // ระบุ field ที่ต้องการ gen id
 			jsondata = utils.CheckJsonData(jsondata, mapGenerateID[0])
+		} else { // auto-generate id ให้ map object ใน nested array ที่ยังไม่มี id (backward compatible)
+			for key, val := range jsondata {
+				if val != nil && reflect.TypeOf(val).Kind() == reflect.Slice {
+					for _, r := range jsondata[key].([]interface{}) {
+						if r != nil && reflect.TypeOf(r).Kind() == reflect.Map {
+							if _, ok := r.(map[string]interface{})["id"]; !ok {
+								r.(map[string]interface{})["id"] = utils.GenerateID("Ar")
+							}
+						}
+					}
+				}
+			}
 		}
 
 		if len(jsonbody.DateKey) > 0 {

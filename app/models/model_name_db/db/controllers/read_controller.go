@@ -3,22 +3,16 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 
-	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
-
-	//"github.com/devinterop/mgdb-core/app/structs"
-	"github.com/devinterop/mgdb-core/app/structs"
-
-	"fmt"
-
-	//"github.com/devinterop/mgdb-core/app/models/model_name_db/structs"
-	"github.com/devinterop/mgdb-core/packages/logging"
-
 	cnst "github.com/devinterop/mgdb-core/cnst"
+	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
+	"github.com/devinterop/mgdb-core/app/structs"
+	"github.com/devinterop/mgdb-core/packages/logging"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -70,7 +64,7 @@ func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService, mapCon
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(byteArray))
 	if len(mapCon) > 0 {
 		return auth.FindDocument(c, jsonPost, false, mapCon[0])
 	}
@@ -91,7 +85,7 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(byteArray))
 	//os.Setenv("collection", jsonPost.Collection)
 	if len(mapCon) > 0 {
 		return auth.FindDocument(c, jsonPost, count, mapCon[0])

@@ -3,21 +3,17 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
-
-	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
-	"github.com/devinterop/mgdb-core/app/structs"
-
-	"fmt"
 	"time"
 
-	//"github.com/devinterop/mgdb-core/app/models/model_name_db/structs"
+	cnst "github.com/devinterop/mgdb-core/cnst"
+	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
+	"github.com/devinterop/mgdb-core/app/structs"
 	"github.com/devinterop/mgdb-core/packages/logging"
 	"github.com/devinterop/mgdb-core/utils"
-
-	cnst "github.com/devinterop/mgdb-core/cnst"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -41,7 +37,7 @@ func (u *UpdateController) UpdateDocumentObj(jsonPost structs.JsonService, mapGe
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(byteArray))
 	if len(mapGenerateID) > 0 {
 		return u.UpdateDocument(c, mapGenerateID[0])
 	}

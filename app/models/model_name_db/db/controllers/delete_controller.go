@@ -4,19 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"time"
 
-	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
 	cnst "github.com/devinterop/mgdb-core/cnst"
-
-	//"github.com/devinterop/mgdb-core/app/models/model_name_db/structs"
+	"github.com/devinterop/mgdb-core/app/models/model_name_db/db/service"
 	"github.com/devinterop/mgdb-core/app/structs"
 	"github.com/devinterop/mgdb-core/packages/logging"
 	"github.com/devinterop/mgdb-core/utils"
-
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -40,7 +37,7 @@ func (u *DeleteController) DeleteDocumentObj(jsonPost structs.JsonService) (bool
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("{}")))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(byteArray))
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(byteArray))
 
 	return u.DeleteDocument(c)
 }
