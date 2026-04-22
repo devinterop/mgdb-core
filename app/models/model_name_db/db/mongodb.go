@@ -128,7 +128,7 @@ func validateCollection(db *mongo.Database, listCollection []string) error {
 		if found {
 			lenCollTemp++
 		} else {
-			logging.Logger(cnst.Info, fmt.Sprint("Not Found the collection names : %v", name), logrusField)
+			logging.Logger(cnst.Info, fmt.Sprintf("Not Found the collection names : %v", name), logrusField)
 			notMap = append(notMap, name)
 		}
 	}
