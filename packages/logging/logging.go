@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -13,7 +13,6 @@ import (
 	"github.com/devinterop/mgdb-core/app/structs"
 	cnst "github.com/devinterop/mgdb-core/cnst"
 
-	//"github.com/devinterop/mgdb-core/utils"
 	nested "github.com/antonfisher/nested-logrus-formatter"
 	"github.com/sirupsen/logrus"
 )
@@ -35,12 +34,6 @@ func InitLog(logconfigInit structs.LogConfiguration) {
 	logconfig = logconfigInit
 	logLevel := logconfig.Level
 	logrus.SetLevel(getLogLevel(logLevel))
-	// logrus.SetFormatter(&logrus.JSONFormatter{})
-	// logrus.SetFormatter(&logrus.TextFormatter{
-	// 	FullTimestamp: true,
-	// 	ForceColors:   true,
-	// 	DisableColors: false,
-	// })
 	logrus.SetFormatter(&nested.Formatter{
 		HideKeys:        true,
 		FieldsOrder:     []string{"application", "module", "method"},
@@ -51,7 +44,6 @@ func InitLog(logconfigInit structs.LogConfiguration) {
 		NoColors:        false,
 		TrimMessages:    false,
 	})
-
 }
 
 func sendLogger(data structs.JsonLogBody) {
@@ -69,17 +61,18 @@ func sendLogger(data structs.JsonLogBody) {
 
 func sendToServerLog(data structs.JsonLogBody) {
 	server := logconfig.Server
-	servicePath := logconfig.ServicePath //"api/logging"
+	servicePath := logconfig.ServicePath
 	url := server + servicePath
 
 	byteData, err := json.Marshal(data)
 	if err != nil {
-		//logrus.Error("err: ", err)
 		panic(err)
 	}
-	//var jsonStr = []byte(string(byteData))
-	// log.Println("send log json :", string(byteData))
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(byteData))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("token", os.Getenv("token"))
@@ -91,7 +84,7 @@ func sendToServerLog(data structs.JsonLogBody) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	var result structs.JsonLogResponseEror
 	json.Unmarshal([]byte(body), &result)
 	logrus.WithFields(logrus.Fields{
@@ -101,140 +94,45 @@ func sendToServerLog(data structs.JsonLogBody) {
 	}).Debug(fmt.Sprintf("result: %s, %s", resp.Status, body))
 }
 
-func Logger(logLevel string, massage interface{}, fields structs.LogrusField, saveLog_option ...bool) {
-	saveLog := true
-	if len(saveLog_option) > 0 {
-		saveLog = saveLog_option[0]
-	}
-	isServerLog := logconfig.OnServerLog
-
-	fields.Application = logconfig.AppName
-	fieldsJSON, err := json.Marshal(fields)
-	if err != nil {
-		//panic(err)
-		logrus.WithFields(logrus.Fields{
-			"application": logconfig.AppName,
-			"module":      "LoggingServiceBackend",
-			"method":      "Logger",
-		}).Error("panic occurred: ", err)
-	}
-	jsonMap := make(map[string]interface{})
-	err2 := json.Unmarshal(fieldsJSON, &jsonMap)
-	if err2 != nil {
-		//panic(err)
-		logrus.WithFields(logrus.Fields{
-			"application": logconfig.AppName,
-			"module":      "LoggingServiceBackend",
-			"method":      "Logger",
-		}).Error("panic occurred: ", err)
-	}
-
-	// set default logrusField if fields conversion has error
-	var logrusField logrus.Fields
-	if err != nil || err2 != nil {
-		logrusField = logrus.Fields{
-			"application": logconfig.AppName,
-		}
-		jsonMap = logrusField
-	}
-
-	if logLevel == Debug {
-		logrus.WithFields(jsonMap).Debug(massage)
-		if isServerLog && saveLog {
-			verifyLogger(logLevel, massage)
-		}
-	} else if logLevel == Info {
-		logrus.WithFields(jsonMap).Info(massage)
-		if isServerLog && saveLog {
-			verifyLogger(logLevel, massage)
-		}
-	} else if logLevel == Warning {
-		logrus.WithFields(jsonMap).Warn(massage)
-		if isServerLog && saveLog {
-			verifyLogger(logLevel, massage)
-		}
-	} else if logLevel == Error {
-		logrus.WithFields(jsonMap).Error(massage)
-		if isServerLog && saveLog {
-			verifyLogger(logLevel, massage)
-		}
-	} else if logLevel == Fatal {
-		logrus.WithFields(jsonMap).Fatal(massage)
-		if isServerLog && saveLog {
-			verifyLogger(logLevel, massage)
-		}
-	}
-}
-
-func LoggerV2(logLevel string, message interface{}, saveLogOption ...bool) {
-	pc, file, line, ok := runtime.Caller(1)
-	if !ok {
-		return
-	}
-	function := runtime.FuncForPC(pc)
-	functionName := function.Name()
-
-	parts := strings.Split(functionName, ".")
-	var packageName, actualFunctionName string
-	if len(parts) > 1 {
-		packageName = strings.Join(parts[:len(parts)-1], ".")
-		actualFunctionName = parts[len(parts)-1]
-	} else {
-		packageName = ""
-		actualFunctionName = functionName
-	}
-
+func Logger(logLevel string, message any, fields structs.LogrusField, saveLogOption ...bool) {
 	saveLog := true
 	if len(saveLogOption) > 0 {
 		saveLog = saveLogOption[0]
 	}
-	isServerLog := logconfig.OnServerLog
-	fields := structs.LogrusField{}
+
 	fields.Application = logconfig.AppName
-	fields.Module = packageName
-	fields.Method = actualFunctionName
-	fields.File = file
-	fields.Line = line
-	fieldsJSON, err := json.Marshal(fields)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"application": logconfig.AppName,
-			"module":      "LoggingServiceBackend",
-			"method":      "Logger",
-		}).Error("Error marshaling fields: ", err)
-		return
+
+	logrusField := logrus.Fields{
+		"application": fields.Application,
+		"module":      fields.Module,
+		"method":      fields.Method,
 	}
 
-	var jsonMap map[string]interface{}
-	if err := json.Unmarshal(fieldsJSON, &jsonMap); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"application": logconfig.AppName,
-			"module":      "LoggingServiceBackend",
-			"method":      "Logger",
-		}).Error("Error unmarshaling fieldsJSON: ", err)
-		jsonMap = map[string]interface{}{
-			"application": logconfig.AppName,
-		}
+	if fields.Module == "" {
+		logrusField["module"] = "LoggingServiceBackend"
+	}
+	if fields.Method == "" {
+		logrusField["method"] = "Logger"
 	}
 
-	logEntry := logrus.WithFields(jsonMap)
+	entry := logrus.WithFields(logrusField)
 
 	switch logLevel {
 	case Debug:
-		logEntry.Debug(message)
+		entry.Debug(message)
 	case Info:
-		logEntry.Info(message)
+		entry.Info(message)
 	case Warning:
-		logEntry.Warn(message)
+		entry.Warn(message)
 	case Error:
-		logEntry.Error(message)
+		entry.Error(message)
 	case Fatal:
-		logEntry.Fatal(message)
+		entry.Fatal(message)
 	default:
-		logEntry.Info(message) // Default to Info if unknown log level
+		entry.Info(message)
 	}
 
-	if isServerLog && saveLog {
+	if logconfig.OnServerLog && saveLog {
 		verifyLogger(logLevel, message)
 	}
 }
@@ -254,8 +152,8 @@ func verifyLogger(logLevel string, massage interface{}) {
 			sendLogger(logObj)
 		}
 	}
-
 }
+
 func getLogState(level string) []string {
 	debugLvl := []string{Debug, Info, Warning, Error, Fatal}
 	infoLvl := []string{Info, Warning, Error, Fatal}
@@ -273,7 +171,6 @@ func getLogState(level string) []string {
 		return errorLvl
 	case Fatal:
 		return fatalLvl
-
 	}
 	return nil
 }
@@ -292,7 +189,6 @@ func getLogLevel(logLevel string) logrus.Level {
 		return logrus.FatalLevel
 	}
 	return logrus.DebugLevel
-
 }
 
 func containInSlice(slice []string, val string) bool {
@@ -302,4 +198,67 @@ func containInSlice(slice []string, val string) bool {
 		}
 	}
 	return false
+}
+
+//go:noinline
+func LoggerV2(logLevel string, message interface{}, saveLogOption ...bool) {
+	_, file, line, functionName := getCaller()
+
+	lastDot := strings.LastIndex(functionName, ".")
+	var packageName, actualFunctionName string
+	if lastDot != -1 {
+		packageName = functionName[:lastDot]
+		actualFunctionName = functionName[lastDot+1:]
+	} else {
+		actualFunctionName = functionName
+	}
+
+	saveLog := true
+	if len(saveLogOption) > 0 {
+		saveLog = saveLogOption[0]
+	}
+
+	logEntry := logrus.WithFields(logrus.Fields{
+		"application": logconfig.AppName,
+		"module":      packageName,
+		"method":      actualFunctionName,
+		"file":        file,
+		"line":        line,
+	})
+
+	switch logLevel {
+	case Debug:
+		logEntry.Debug(message)
+	case Info:
+		logEntry.Info(message)
+	case Warning:
+		logEntry.Warn(message)
+	case Error:
+		logEntry.Error(message)
+	case Fatal:
+		logEntry.Fatal(message)
+	default:
+		logEntry.Info(message)
+	}
+
+	if logconfig.OnServerLog && saveLog {
+		verifyLogger(logLevel, message)
+	}
+}
+
+// getCaller walks up the call stack skipping frames within this logging package.
+func getCaller() (uintptr, string, int, string) {
+	const loggingPkg = "github.com/devinterop/mgdb-core/packages/logging"
+	for i := 1; i < 10; i++ {
+		pc, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		fn := runtime.FuncForPC(pc)
+		name := fn.Name()
+		if !strings.Contains(name, loggingPkg) {
+			return pc, file, line, name
+		}
+	}
+	return 0, "?", 0, "?"
 }

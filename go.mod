@@ -5,8 +5,8 @@ go 1.26
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/coolbed/mgo-oid v0.0.0-20170627135709-d2b570933ac9
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.10.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.17.0

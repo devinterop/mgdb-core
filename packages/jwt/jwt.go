@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	// nuboJwt "github.com/nubo/jwt"
+	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/devinterop/mgdb-core/app/structs"
 	cnst "github.com/devinterop/mgdb-core/cnst"
 	"github.com/devinterop/mgdb-core/packages/logging"
@@ -19,10 +19,11 @@ type JWTService interface {
 	GenerateToken(email string, isUser bool) string
 	ValidateToken(token string) (*jwt.Token, error)
 }
+
 type authCustomClaims struct {
 	Name string `json:"name"`
 	User bool   `json:"user"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 type jwtServices struct {
@@ -57,45 +58,36 @@ func (service *jwtServices) GenerateToken(email string, isUser bool) string {
 	claims := &authCustomClaims{
 		email,
 		isUser,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 48).Unix(),
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 48)),
 			Issuer:    service.issure,
-			IssuedAt:  time.Now().Unix(),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	//encoded string
 	t, err := token.SignedString([]byte(service.secretKey))
 	if err != nil {
-		//panic(err)
 		logging.Logger(cnst.Fatal, err, logrusField)
 	}
 	return t
 }
 
 func (service *jwtServices) ValidateToken(encodedToken string) (*jwt.Token, error) {
-	// atClaims := jwt.MapClaims{}
-	// atClaims["authorized"] = true
 	return jwt.Parse(encodedToken, func(token *jwt.Token) (interface{}, error) {
 		if _, isvalid := token.Method.(*jwt.SigningMethodHMAC); !isvalid {
 			return nil, fmt.Errorf("Invalid token %s", token.Header["alg"])
-
 		}
 		return []byte(service.secretKey), nil
 	})
-
 }
 
 func (j JwtCtrl) ExtractClaims(tokenStr string) (jwt.MapClaims, bool) {
 	logrusField := logrusFieldJwt
 	logrusField.Method = "ExtractClaims"
 
-	hmacSecretString := getSecretKey() // Value
-	hmacSecret := []byte(hmacSecretString)
+	hmacSecret := []byte(getSecretKey())
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-
-		// check token signing method etc
 		return hmacSecret, nil
 	})
 	if err != nil {
@@ -105,9 +97,8 @@ func (j JwtCtrl) ExtractClaims(tokenStr string) (jwt.MapClaims, bool) {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, true
-	} else {
-		//log.Printf("Invalid JWT Token")
-		logging.Logger(cnst.Error, "Invalid JWT Token", logrusField)
-		return nil, false
 	}
+
+	logging.Logger(cnst.Error, "Invalid JWT Token", logrusField)
+	return nil, false
 }
