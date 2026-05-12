@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 
@@ -28,12 +28,15 @@ func sendToActivityLog(data ActivityInfo) {
 
 	byteData, err := json.Marshal(data)
 	if err != nil {
-		//logrus.Error("err: ", err)
 		logging.LoggerV2(logging.Error, err)
+		return
 	}
-	//var jsonStr = []byte(string(byteData))
-	// log.Println("send log json :", string(byteData))
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(byteData))
+	if err != nil {
+		logging.LoggerV2(logging.Error, err)
+		return
+	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("token", os.Getenv("token"))
@@ -42,10 +45,11 @@ func sendToActivityLog(data ActivityInfo) {
 	resp, err := client.Do(req)
 	if err != nil {
 		logging.LoggerV2(logging.Error, err)
+		return
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	var result structs.JsonLogResponseEror
 	json.Unmarshal([]byte(body), &result)
 	logrus.WithFields(logrus.Fields{
@@ -56,7 +60,6 @@ func sendToActivityLog(data ActivityInfo) {
 }
 
 func ActivityLog(data ActivityLogInfo) {
-
 	var logObj ActivityInfo
 	logObj.PersonalId = data.PersonalId
 	logObj.ApplicationId = Activitylogconfig.AppId
@@ -67,5 +70,4 @@ func ActivityLog(data ActivityLogInfo) {
 	logObj.ReferenceId = data.ReferenceId
 	logging.LoggerV2(logging.Debug, logObj)
 	sendToActivityLog(logObj)
-
 }
