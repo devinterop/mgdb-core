@@ -12,6 +12,7 @@ type ActivityInfo struct {
 	Detail          string `json:"detail,omitempty"`          // รายละเอียดของกิจกรรม
 	ReferenceId     string `json:"referenceId,omitempty"`     // id ของข้อมูลต้นทาง
 	LogId           string `json:"logId,omitempty"`           // id ของ log entry (middleware) สำหรับสืบดู request/response ต้นทาง
+	Status          bool   `json:"status,omitempty"`          // ผลลัพธ์ของกิจกรรม (สำเร็จ/ไม่สำเร็จ)
 	Last_updated    string `json:"last_updated,omitempty"`
 }
 
@@ -25,4 +26,5 @@ type ActivityLogInfo struct {
 	Detail          string `json:"detail,omitempty"`          // รายละเอียดของกิจกรรม
 	ReferenceId     string `json:"referenceId,omitempty"`     // id ของข้อมูลต้นทาง
 	LogId           string `json:"logId,omitempty"`           // id ของ log entry (middleware) สำหรับสืบดู request/response ต้นทาง
+	Status          bool   `json:"status,omitempty"`          // ผลลัพธ์ของกิจกรรม (สำเร็จ/ไม่สำเร็จ)
 }

@@ -69,6 +69,7 @@ func ActivityLog(data ActivityLogInfo) {
 	logObj.Detail = data.Detail
 	logObj.ReferenceId = data.ReferenceId
 	logObj.LogId = data.LogId
+	logObj.Status = data.Status
 	logging.LoggerV2(logging.Debug, logObj)
 	sendToActivityLog(logObj)
 }
