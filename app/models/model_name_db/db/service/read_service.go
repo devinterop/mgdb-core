@@ -28,22 +28,13 @@ func (readservice ReadService) AggregateDocument(data []bson.M, collection strin
 	result := []bson.M{}
 	opts := options.Aggregate()
 	cur, err := Database.Collection(collection).Aggregate(context.TODO(), data, opts)
+	if err != nil {
+		return nil, err, true
+	}
+	defer cur.Close(context.TODO())
 	if err = cur.All(context.TODO(), &result); err != nil {
 		return nil, err, true
 	}
-	// if err != nil {
-	// 	return nil, err, true
-	// }
-	//Map result to slice
-	// for cur.Next(context.TODO()) {
-	// 	t := bson.M{}
-	// 	err := cur.Decode(&t)
-	// 	if err != nil {
-	// 		return nil, err, true
-	// 	}
-	// 	result = append(result, t)
-	// }
-	cur.Close(context.TODO())
 	if len(result) == 0 {
 		return result, mongo.ErrNoDocuments, true
 	}
@@ -63,22 +54,13 @@ func (readservice ReadService) FindDocument(filter bson.M, projection bson.M, co
 	opts.SetSkip(skip)
 	opts.SetLimit(limit)
 	cur, err := Database.Collection(collection).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err, true
+	}
+	defer cur.Close(context.TODO())
 	if err = cur.All(context.TODO(), &result); err != nil {
 		return nil, err, true
 	}
-	// if err != nil {
-	// 	return nil, err, true
-	// }
-	//Map result to slice
-	// for cur.Next(context.TODO()) {
-	// 	t := bson.M{}
-	// 	err := cur.Decode(&t)
-	// 	if err != nil {
-	// 		return nil, err, true
-	// 	}
-	// 	result = append(result, t)
-	// }
-	cur.Close(context.TODO())
 	if len(result) == 0 {
 		return result, mongo.ErrNoDocuments, true
 	}
