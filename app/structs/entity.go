@@ -75,10 +75,12 @@ type JsonService struct {
 
 //Jsonbody struct is to handle Json body request
 type JsonLogBody struct {
-	Level    string      `json:"level"`
-	Message  interface{} `json:"message"`
-	App_id   string      `json:"app_id"`
-	App_name string      `json:"app_name"`
+	Level     string      `json:"level"`
+	Message   interface{} `json:"message"`
+	App_id    string      `json:"app_id"`
+	App_name  string      `json:"app_name"`
+	RequestId string      `json:"requestId,omitempty"`
+	ParentId  string      `json:"parentId,omitempty"`
 }
 
 type JsonLogResponseEror struct {
