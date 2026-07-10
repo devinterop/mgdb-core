@@ -2,6 +2,7 @@ package logging
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,6 +17,52 @@ import (
 	nested "github.com/antonfisher/nested-logrus-formatter"
 	"github.com/sirupsen/logrus"
 )
+
+// ctxKey เป็น type เฉพาะของ package นี้กันชนกับ context key ของ package อื่น (go vet เตือนถ้าใช้ string ดิบ)
+type ctxKey string
+
+// traceKey เป็น context key เดียวที่เก็บ TraceContext ทั้งก้อน — เพิ่ม field ตามรอย request ในอนาคต (traceId, spanId, ...)
+// ได้โดยไม่ต้องเพิ่ม context key ใหม่
+const traceKey ctxKey = "trace"
+
+// TraceContext รวม field ที่ใช้ตามรอย request ไว้ในที่เดียว ให้ LoggerV3 อ่านทีเดียวจบ
+type TraceContext struct {
+	RequestId string
+	ParentId  string
+}
+
+// WithTrace ผูก TraceContext ทั้งก้อนเข้ากับ ctx (ทับของเดิมทั้งหมดถ้ามี)
+func WithTrace(ctx context.Context, trace TraceContext) context.Context {
+	return context.WithValue(ctx, traceKey, trace)
+}
+
+// TraceFromContext อ่าน TraceContext ออกจาก ctx คืน zero value ถ้ายังไม่มีการ set (ctx เป็น nil ก็ปลอดภัย)
+func TraceFromContext(ctx context.Context) TraceContext {
+	if ctx == nil {
+		return TraceContext{}
+	}
+	if trace, ok := ctx.Value(traceKey).(TraceContext); ok {
+		return trace
+	}
+	return TraceContext{}
+}
+
+// WithRequestId ผูก requestId เข้ากับ ctx โดยคง field อื่นของ TraceContext เดิมไว้ (เช่น parentId ที่ set มาก่อนหน้า)
+// ให้ LoggerV3 อ่านออกมา print ได้เองโดยไม่ต้องส่งซ้ำทุกครั้ง
+// เรียกครั้งเดียวที่ middleware ต้นทางของ request (เช่น c.Request = c.Request.WithContext(logging.WithRequestId(c.Request.Context(), reqID)))
+func WithRequestId(ctx context.Context, requestId string) context.Context {
+	trace := TraceFromContext(ctx)
+	trace.RequestId = requestId
+	return WithTrace(ctx, trace)
+}
+
+// WithParentId ผูก parentId เข้ากับ ctx โดยคง field อื่นของ TraceContext เดิมไว้ (เช่น requestId ที่ set มาก่อนหน้า)
+// เรียกที่ middleware ต้นทางของ request (เช่น กรณีอ่าน X-Parent-ID header มาได้)
+func WithParentId(ctx context.Context, parentId string) context.Context {
+	trace := TraceFromContext(ctx)
+	trace.ParentId = parentId
+	return WithTrace(ctx, trace)
+}
 
 type LoggingServiceBackend struct{}
 
@@ -133,16 +180,18 @@ func Logger(logLevel string, message any, fields structs.LogrusField, saveLogOpt
 	}
 
 	if logconfig.OnServerLog && saveLog {
-		verifyLogger(logLevel, message)
+		verifyLogger(logLevel, message, "", "")
 	}
 }
 
-func verifyLogger(logLevel string, massage interface{}) {
+func verifyLogger(logLevel string, massage interface{}, requestId string, parentId string) {
 	var logObj structs.JsonLogBody
 	logObj.App_id = logconfig.AppId
 	logObj.App_name = logconfig.AppName
 	logObj.Level = getLogLevel(logLevel).String()
 	logObj.Message = massage
+	logObj.RequestId = requestId
+	logObj.ParentId = parentId
 
 	isServerLog := logconfig.OnServerLog
 	logLevelEnv := logconfig.Level
@@ -242,7 +291,61 @@ func LoggerV2(logLevel string, message interface{}, saveLogOption ...bool) {
 	}
 
 	if logconfig.OnServerLog && saveLog {
-		verifyLogger(logLevel, message)
+		verifyLogger(logLevel, message, "", "")
+	}
+}
+
+//go:noinline
+func LoggerV3(ctx context.Context, logLevel string, message interface{}) {
+	_, file, line, functionName := getCaller()
+
+	lastDot := strings.LastIndex(functionName, ".")
+	var packageName, actualFunctionName string
+	if lastDot != -1 {
+		packageName = functionName[:lastDot]
+		actualFunctionName = functionName[lastDot+1:]
+	} else {
+		actualFunctionName = functionName
+	}
+
+	saveLog := false
+
+	trace := TraceFromContext(ctx)
+	requestId := trace.RequestId
+	parentId := trace.ParentId
+
+	logrusFields := logrus.Fields{
+		"application": logconfig.AppName,
+		"module":      packageName,
+		"method":      actualFunctionName,
+		"file":        file,
+		"line":        line,
+	}
+	if requestId != "" {
+		logrusFields["requestId"] = requestId
+	}
+	if parentId != "" {
+		logrusFields["parentId"] = parentId
+	}
+	logEntry := logrus.WithFields(logrusFields)
+
+	switch logLevel {
+	case Debug:
+		logEntry.Debug(message)
+	case Info:
+		logEntry.Info(message)
+	case Warning:
+		logEntry.Warn(message)
+	case Error:
+		logEntry.Error(message)
+	case Fatal:
+		logEntry.Fatal(message)
+	default:
+		logEntry.Info(message)
+	}
+
+	if logconfig.OnServerLog && saveLog {
+		verifyLogger(logLevel, message, requestId, parentId)
 	}
 }
 
