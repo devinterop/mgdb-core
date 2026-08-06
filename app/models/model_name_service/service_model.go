@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	modelCtrl "github.com/devinterop/mgdb-core/app/models/model_name_db/db/controllers"
 	"github.com/devinterop/mgdb-core/app/structs"
@@ -498,4 +499,56 @@ func (u ServiceModel) SendApiUploadFile(urlPath string, requestType string, head
 	// log.Println("response Body:", string(body))
 
 	return string(body), string(resp.Status), ""
+}
+
+func (s ServiceModel) SendApiBearerHeaderV2(data []byte, url string, requestType string, headers map[string]interface{}) (string, string) {
+	logrusField := logrusFieldFusionauth
+	logrusField.Method = "SendApiBearerHeader"
+
+	logging.Logger(cnst.Info, fmt.Sprint("URL:> ", url), logrusField)
+
+	// ไม่จำเป็นต้อง convert byte -> string -> byte ใช้ data ได้เลย
+	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
+	if err != nil {
+		// เปลี่ยนจาก panic เป็นการ log error แล้ว return ค่าว่างออกไป
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return "", "ERROR_CREATE_REQUEST"
+	}
+
+	req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+
+	if len(headers) != 0 {
+		for k, v := range headers {
+			if strings.Contains(fmt.Sprint(k), "Authorization") {
+				req.Header.Add("Authorization", "Bearer "+fmt.Sprint(v))
+			} else {
+				req.Header.Add(k, fmt.Sprint(v))
+			}
+		}
+	}
+
+	client := &http.Client{
+		// แนะนำให้ใส่ Timeout เพื่อไม่ให้รอ connection นานเกินไปจนระบบค้าง
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		// เปลี่ยนจาก panic เป็นการ log error แล้ว return เพื่อให้ระบบทำงานต่อได้
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return "", "ERROR_REQUEST_FAILED"
+	}
+	defer resp.Body.Close()
+
+	logging.Logger(cnst.Info, fmt.Sprint("Response Status:", resp.StatusCode), logrusField)
+
+	// ใช้ io.ReadAll แทน ioutil.ReadAll (สำหรับ Go 1.16+)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return "", resp.Status
+	}
+
+	return string(body), resp.Status
 }
