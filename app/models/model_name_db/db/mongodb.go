@@ -26,14 +26,45 @@ var logrusFieldMongodb = structs.LogrusField{
 }
 var Database *mongo.Database
 
+const (
+	DefaultMaxPoolSize     uint64 = 100
+	DefaultMinPoolSize     uint64 = 0
+	DefaultMaxConnIdleTime        = 5 * time.Minute
+)
+
+type ConnectionConfig struct {
+	AppName         string
+	MaxPoolSize     uint64
+	MinPoolSize     uint64
+	MaxConnIdleTime time.Duration
+}
+
+func normalizeConnectionConfig(config ConnectionConfig) ConnectionConfig {
+	if config.MaxPoolSize == 0 {
+		config.MaxPoolSize = DefaultMaxPoolSize
+	}
+	if config.MinPoolSize == 0 {
+		config.MinPoolSize = DefaultMinPoolSize
+	}
+	if config.MaxConnIdleTime <= 0 {
+		config.MaxConnIdleTime = DefaultMaxConnIdleTime
+	}
+	return config
+}
+
 func GetDBConnected() *mongo.Database {
 	return Database
 }
 
 // Connect is for get mongo driver connection
-func Connect(connectionString string, dbName string, userDb string, passDb string) {
+func Connect(connectionString string, dbName string, userDb string, passDb string, configs ...ConnectionConfig) {
 	logrusField := logrusFieldMongodb
 	logrusField.Method = "Connect"
+	clientConfig := ConnectionConfig{}
+	if len(configs) > 0 {
+		clientConfig = configs[0]
+	}
+	clientConfig = normalizeConnectionConfig(clientConfig)
 
 	// Database Config
 	credential := options.Credential{
@@ -41,7 +72,15 @@ func Connect(connectionString string, dbName string, userDb string, passDb strin
 		Password: passDb,
 	}
 	// clientOptions := options.Client().ApplyURI(connectionString)
-	clientOptions := options.Client().ApplyURI(connectionString).SetAuth(credential)
+	clientOptions := options.Client().
+		ApplyURI(connectionString).
+		SetAuth(credential).
+		SetMaxPoolSize(clientConfig.MaxPoolSize).
+		SetMinPoolSize(clientConfig.MinPoolSize).
+		SetMaxConnIdleTime(clientConfig.MaxConnIdleTime)
+	if appName := strings.TrimSpace(clientConfig.AppName); appName != "" {
+		clientOptions.SetAppName(appName)
+	}
 	client, err := mongo.NewClient(clientOptions)
 
 	//Set up a context required by mongo.Connect
