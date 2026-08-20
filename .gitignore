@@ -1,3 +1,2 @@
 *.exe
-go.sum
 vendor/
