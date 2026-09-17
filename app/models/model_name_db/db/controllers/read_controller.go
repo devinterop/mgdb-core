@@ -37,10 +37,10 @@ func (auth *ReadController) FindAggregate(pipeline []primitive.M, collectionName
 	result, err, collection := userservice.AggregateDocument(pipeline, collectionName)
 	if err != nil || !collection {
 		if !collection {
-			c.JSON(500, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
+			c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": "Collection not found!"})
 		} else {
 			logging.Logger(cnst.Error, fmt.Sprint("FindAggregate(): error: ", err.Error()), logrusField)
-			c.JSON(500, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"statusCode": http.StatusInternalServerError, "message": "The following item haven't gotten", "errors": err.Error()})
 		}
 	} else {
 		// c.JSON(200, gin.H{"statusCode": setting.AppSetting.HTTP200, "message": "The following items have gotten successfully", "results": result})
