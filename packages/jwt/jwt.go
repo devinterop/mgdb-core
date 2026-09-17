@@ -68,7 +68,7 @@ func (service *jwtServices) GenerateToken(email string, isUser bool) string {
 
 	t, err := token.SignedString([]byte(service.secretKey))
 	if err != nil {
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 	}
 	return t
 }
@@ -91,7 +91,7 @@ func (j JwtCtrl) ExtractClaims(tokenStr string) (jwt.MapClaims, bool) {
 		return hmacSecret, nil
 	})
 	if err != nil {
-		logging.Logger(cnst.Fatal, fmt.Sprint("JWT Parse error: ", err), logrusField)
+		logging.Logger(cnst.Error, fmt.Sprint("JWT Parse error: ", err), logrusField)
 		return nil, false
 	}
 

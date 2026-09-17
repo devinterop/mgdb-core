@@ -57,7 +57,7 @@ func ConvertStructToJson(s interface{}) []byte {
 	f := reflect.Indirect(r).Elem()
 	j, err := json.Marshal(f.Interface())
 	if err != nil {
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 	}
 	//logging.Logger(cnst.Debug, fmt.Sprintf("%+v => %s", s, string(j)), logrusField)
 	return j
@@ -136,7 +136,7 @@ func getEnvVariableBool(key string) bool {
 	boolValue, err := strconv.ParseBool(result)
 	if err != nil {
 		//log.Fatal(err)
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return false
 	}
 	return boolValue
@@ -205,7 +205,7 @@ func ConvertToSlice(s string) []string {
 		//log.Fatal(err)
 		//logging.Logger(cnst.Fatal, err)
 		//panic(err)
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return nil
 	}
 	return str
@@ -853,7 +853,7 @@ func ConvertStringToInt(input string) int {
 	out, err := strconv.Atoi(input)
 	if err != nil {
 
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return -1
 	}
 	return out
@@ -1148,31 +1148,31 @@ func FormatSortDate(intput string) time.Time {
 	yearInt, err := strconv.Atoi(yearstr) //
 	if err != nil {
 
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return time.Time{}
 	}
 	monthInt, err := strconv.Atoi(monthstr) //
 	if err != nil {
 
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return time.Time{}
 	}
 	dayInt, err := strconv.Atoi(daystr) //
 	if err != nil {
 
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return time.Time{}
 	}
 	hrInt, err := strconv.Atoi(hrstr) //
 	if err != nil {
 
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return time.Time{}
 	}
 	minInt, err := strconv.Atoi(minstr) //
 	if err != nil {
 
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return time.Time{}
 	}
 	month := time.Month(monthInt)
@@ -1206,35 +1206,35 @@ func GetDateFromString(intput string) (year int, month int, day int, hour int, m
 				year, err := strconv.Atoi(yearStr)
 				if err != nil {
 
-					logging.Logger(cnst.Fatal, err, logrusField)
+					logging.Logger(cnst.Error, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				month, err := strconv.Atoi(monthStr)
 				if err != nil {
 
-					logging.Logger(cnst.Fatal, err, logrusField)
+					logging.Logger(cnst.Error, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				day, err := strconv.Atoi(dayStr)
 				if err != nil {
 
-					logging.Logger(cnst.Fatal, err, logrusField)
+					logging.Logger(cnst.Error, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				hour, err := strconv.Atoi(hourstr)
 				if err != nil {
 
-					logging.Logger(cnst.Fatal, err, logrusField)
+					logging.Logger(cnst.Error, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 
 				min, err := strconv.Atoi(minstr)
 				if err != nil {
 
-					logging.Logger(cnst.Fatal, err, logrusField)
+					logging.Logger(cnst.Error, err, logrusField)
 					return -1, -1, -1, -1, -1
 				}
 				return year, month, day, hour, min
