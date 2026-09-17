@@ -43,7 +43,8 @@ func (s ServiceModel) SendApi(data []byte, url string, requestType string, heade
 	//log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return ""
 	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
@@ -56,7 +57,8 @@ func (s ServiceModel) SendApi(data []byte, url string, requestType string, heade
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return ""
 	}
 	defer resp.Body.Close()
 
@@ -65,7 +67,8 @@ func (s ServiceModel) SendApi(data []byte, url string, requestType string, heade
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return ""
 	}
 	// log.Println("response Body:", string(body))
 
@@ -77,13 +80,14 @@ func (s ServiceModel) SendApiWithStatus(data []byte, url string, requestType str
 	logrusField := logrusFieldFusionauth
 	logrusField.Method = "SendApiWithStatus"
 
-	// url := "http://phr.mch.mfu.ac.th/servicedev/rest/rsservice/dataOperatePost"
-	// log.Println("URL:>", url)
+	logging.Logger(cnst.Info, fmt.Sprint("URL:> ", url), logrusField)
+
 	var jsonStr = []byte(string(data))
 	// log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(jsonStr))
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
@@ -96,7 +100,8 @@ func (s ServiceModel) SendApiWithStatus(data []byte, url string, requestType str
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	defer resp.Body.Close()
 
@@ -105,7 +110,8 @@ func (s ServiceModel) SendApiWithStatus(data []byte, url string, requestType str
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	// log.Println("response Body:", string(body))
 
@@ -130,7 +136,8 @@ func GetDocumentId(filterName string, filterVal interface{}, Collection string) 
 	byteArray, err := json.Marshal(jsonPost)
 	if err != nil {
 		//log.Fatal(err)
-		logging.Logger(cnst.Fatal, fmt.Sprint("error:", err), logrusField)
+		logging.Logger(cnst.Error, fmt.Sprint("Marshal Error: ", err.Error()), logrusField)
+		return ""
 	}
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	// Restore the io.ReadCloser to its original state
@@ -169,7 +176,8 @@ func (s ServiceModel) SendPostFileRequest(url string, filename string, filetype 
 
 	if err != nil {
 		//log.Fatal(err)
-		logging.Logger(cnst.Fatal, fmt.Sprint("error:", err), logrusField)
+		logging.Logger(cnst.Error, fmt.Sprint("Open File Error: ", err.Error()), logrusField)
+		return nil
 	}
 	defer file.Close()
 
@@ -179,7 +187,8 @@ func (s ServiceModel) SendPostFileRequest(url string, filename string, filetype 
 
 	if err != nil {
 		//log.Fatal(err)
-		logging.Logger(cnst.Fatal, fmt.Sprint("error:", err), logrusField)
+		logging.Logger(cnst.Error, fmt.Sprint("CreateFormFile Error: ", err.Error()), logrusField)
+		return nil
 	}
 
 	io.Copy(part, file)
@@ -188,7 +197,8 @@ func (s ServiceModel) SendPostFileRequest(url string, filename string, filetype 
 
 	if err != nil {
 		//log.Fatal(err)
-		logging.Logger(cnst.Fatal, fmt.Sprint("error:", err), logrusField)
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return nil
 	}
 
 	request.Header.Add("Content-Type", writer.FormDataContentType())
@@ -198,7 +208,8 @@ func (s ServiceModel) SendPostFileRequest(url string, filename string, filetype 
 
 	if err != nil {
 		//log.Fatal(err)
-		logging.Logger(cnst.Fatal, fmt.Sprint("error:", err), logrusField)
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return nil
 	}
 	defer response.Body.Close()
 
@@ -206,7 +217,8 @@ func (s ServiceModel) SendPostFileRequest(url string, filename string, filetype 
 
 	if err != nil {
 		//log.Fatal(err)
-		logging.Logger(cnst.Fatal, fmt.Sprint("error:", err), logrusField)
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return nil
 	}
 
 	return content
@@ -223,7 +235,8 @@ func (s ServiceModel) SendApiHeaders(data []byte, url string, requestType string
 	//log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
@@ -235,7 +248,8 @@ func (s ServiceModel) SendApiHeaders(data []byte, url string, requestType string
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	defer resp.Body.Close()
 
@@ -244,7 +258,8 @@ func (s ServiceModel) SendApiHeaders(data []byte, url string, requestType string
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	// log.Println("response Body:", string(body))
 
@@ -263,7 +278,8 @@ func (s ServiceModel) SendApiBearerHeader(data []byte, url string, requestType s
 	// log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(jsonStr))
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
@@ -284,8 +300,8 @@ func (s ServiceModel) SendApiBearerHeader(data []byte, url string, requestType s
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		// return "" , ""
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	defer resp.Body.Close()
 
@@ -295,7 +311,8 @@ func (s ServiceModel) SendApiBearerHeader(data []byte, url string, requestType s
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	// log.Println("response Body:", string(body))
 
@@ -313,7 +330,8 @@ func (s ServiceModel) SendApiBasicAuthen(data []byte, url string, requestType st
 	//log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	//userName := "apikey"
 	//pass := utils.ViperEnvVariable("TLPH-API-KEY")	// add via app header
@@ -336,7 +354,8 @@ func (s ServiceModel) SendApiBasicAuthen(data []byte, url string, requestType st
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	defer resp.Body.Close()
 
@@ -345,7 +364,8 @@ func (s ServiceModel) SendApiBasicAuthen(data []byte, url string, requestType st
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	//log.Println("response Body:", string(body))
 
@@ -363,14 +383,18 @@ func (s ServiceModel) SendApiNotify(data []byte, url string, requestType string,
 	//var jsonStr = []byte(string(data))
 	//log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
+	if err != nil {
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return "", "500"
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+ChannelToken)
 	//req.Header.Set("X-Line-Retry-Key","xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
 		return "", ""
-		//panic(err)
 	}
 	defer resp.Body.Close()
 
@@ -378,6 +402,10 @@ func (s ServiceModel) SendApiNotify(data []byte, url string, requestType string,
 	//log.Println("response Headers:", resp.Header)
 	logging.Logger(cnst.Info, fmt.Sprint("Response Status:", resp.StatusCode), logrusField)
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return "", "500"
+	}
 	//log.Println("response Body:", string(body))
 
 	return string(body), string(resp.Status)
@@ -394,7 +422,8 @@ func (s ServiceModel) SendApiKey(data []byte, url string, requestType string, he
 	//log.Println("jsonStr post:", string(data))
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(data))
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("NewRequest Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	//userName := "apikey"
 
@@ -418,8 +447,8 @@ func (s ServiceModel) SendApiKey(data []byte, url string, requestType string, he
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		// return "" , ""
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("HTTP Client Do Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	defer resp.Body.Close()
 
@@ -428,7 +457,8 @@ func (s ServiceModel) SendApiKey(data []byte, url string, requestType string, he
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		logging.Logger(cnst.Error, fmt.Sprint("ReadAll Body Error: ", err.Error()), logrusField)
+		return "", "500"
 	}
 	//log.Println("response Body:", string(body))
 
