@@ -32,7 +32,8 @@ func (u *DeleteController) DeleteDocumentObj(jsonPost structs.JsonService) (bool
 	byteArray, err := json.Marshal(jsonPost)
 	if err != nil {
 		// panic(err)
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
+		return false, nil
 	}
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
@@ -53,9 +54,9 @@ func (u *DeleteController) DeleteDocument(c *gin.Context) (bool, interface{}) {
 	//Check if jsonbody is not following struck format
 	if err := c.ShouldBindJSON(&jsonbody); err != nil {
 		// panic(err)
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		c.JSON(http.StatusBadRequest, err) // 401 -> 400
-		//return resultStatus, resultData
+		return resultStatus, resultData
 	}
 
 	con, e := jsonbody.Condition.(map[string]interface{})

@@ -59,7 +59,8 @@ func (auth *ReadController) FindDocumentObj(jsonPost structs.JsonService, mapCon
 	byteArray, err := json.Marshal(jsonPost)
 	if err != nil {
 		// panic(err)
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
+		return false, nil
 	}
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
@@ -79,7 +80,8 @@ func (auth *ReadController) FindDocumentObjCount(jsonPost structs.JsonService, c
 	byteArray, err := json.Marshal(jsonPost)
 	if err != nil {
 		// panic(err)
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
+		return false, nil
 	}
 	//fmt.Println("byteArray=", string(byteArray))
 	logging.Logger(cnst.Debug, fmt.Sprint("jsonPost: ", string(byteArray)), logrusField)
@@ -104,7 +106,7 @@ func (auth *ReadController) FindDocument(c *gin.Context, jsonService structs.Jso
 
 	jsonbody, err := parseJsonService(jsonService)
 	if err != nil {
-		logging.Logger(cnst.Fatal, err, logrusField)
+		logging.Logger(cnst.Error, err, logrusField)
 		return resultStatus, resultData
 	}
 
