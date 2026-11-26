@@ -101,6 +101,8 @@ type LogConfiguration struct {
 	AppName     string `json:"appName,omitempty"`
 	Level       string `json:"logLevel,omitempty"`
 	OnServerLog bool   `json:"onServerLog,omitempty"`
+	// Format ของ log บน stdout: "" หรือ "nested" = แบบเดิม (ค่าเริ่มต้น), "logfmt" = key=value, "json"
+	Format string `json:"format,omitempty"`
 }
 
 type ActivityLogConfiguration struct {
