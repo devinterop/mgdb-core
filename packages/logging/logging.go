@@ -29,6 +29,10 @@ const traceKey ctxKey = "trace"
 type TraceContext struct {
 	RequestId string
 	ParentId  string
+	// UserId / BranchId / OrderId เป็นบริบทของ request ที่ Event() ใส่ให้ทุกบรรทัดอัตโนมัติ (set ผ่าน WithUser / WithOrderId)
+	UserId   string
+	BranchId string
+	OrderId  string
 }
 
 // WithTrace ผูก TraceContext ทั้งก้อนเข้ากับ ctx (ทับของเดิมทั้งหมดถ้ามี)
@@ -64,6 +68,23 @@ func WithParentId(ctx context.Context, parentId string) context.Context {
 	return WithTrace(ctx, trace)
 }
 
+// WithUser ผูก userId และ branchId เข้ากับ ctx โดยคง field อื่นของ TraceContext เดิมไว้
+// เรียกที่ middleware หลังตรวจ token แล้ว ให้ Event() ใส่ user_id / branch_id ให้ทุกบรรทัด
+func WithUser(ctx context.Context, userId string, branchId string) context.Context {
+	trace := TraceFromContext(ctx)
+	trace.UserId = userId
+	trace.BranchId = branchId
+	return WithTrace(ctx, trace)
+}
+
+// WithOrderId ผูก orderId เข้ากับ ctx โดยคง field อื่นของ TraceContext เดิมไว้
+// เรียกที่ handler ที่รู้ order แล้ว ให้ Event() และ outbound log ใส่ order_id ให้เอง
+func WithOrderId(ctx context.Context, orderId string) context.Context {
+	trace := TraceFromContext(ctx)
+	trace.OrderId = orderId
+	return WithTrace(ctx, trace)
+}
+
 type LoggingServiceBackend struct{}
 
 var Debug = cnst.Debug
@@ -81,6 +102,16 @@ func InitLog(logconfigInit structs.LogConfiguration) {
 	logconfig = logconfigInit
 	logLevel := logconfig.Level
 	logrus.SetLevel(getLogLevel(logLevel))
+
+	// Format ว่าง (ค่าเริ่มต้น) = nested แบบเดิม service ที่ไม่ได้ตั้งค่าจะได้ output เหมือนเดิมทุกอย่าง
+	switch logconfig.Format {
+	case FormatLogfmt:
+		logrus.SetFormatter(newLogfmtFormatter())
+		return
+	case FormatJSON:
+		logrus.SetFormatter(&logrus.JSONFormatter{TimestampFormat: "2006-01-02T15:04:05.000Z07:00"})
+		return
+	}
 	logrus.SetFormatter(&nested.Formatter{
 		HideKeys:        true,
 		FieldsOrder:     []string{"application", "module", "method"},

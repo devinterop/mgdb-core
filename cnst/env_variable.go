@@ -11,4 +11,5 @@ const (
 	ServerAuthen  = "ServerAuthen"
 	SecretKey     = "SECRET_KEY"
 	ActivityLog   = "ActivityLog"
+	LogFormat     = "logFormat" // ค่า: "" | nested | logfmt | json (ดู logging.InitLog)
 )
